@@ -41,6 +41,10 @@ Website and downloads: https://miaolan66.github.io/sfslauncher/
 - Five glass modes: off, Aero, acrylic, mica, Liuli. Available options depend on OS build and hardware
 - The Liuli mode exposes four material sliders — content opacity, wallpaper veil, wallpaper blur, glow — applied live while dragging
 
+### Language
+- Chinese/English UI, switch in the bottom-left corner; the choice is written to the config and restored on the next launch
+- Static pages and runtime-generated lists, empty states, toasts and dialogs all go through the same dictionary
+
 ### System integration
 - Launch at login, hide to tray after launch, configurable close-button behavior
 - Proxy and download directory settings
