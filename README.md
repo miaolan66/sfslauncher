@@ -69,6 +69,8 @@ Spaceflight Simulator 的 Windows 启动器：实例、模组、蓝图、存档�
 
 ## 从源码运行
 
+源码压缩包在仓库根目录：`SFSLauncher-0.88.0-source.zip`。
+
 需要 Node.js 18 以上、npm。
 
 ```bash

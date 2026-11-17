@@ -69,6 +69,8 @@ Both packages are feature-identical and include the translation injector.
 
 ## Running from source
 
+The source archive is at the repository root: `SFSLauncher-0.88.0-source.zip`.
+
 Requires Node.js 18 or newer and npm.
 
 ```bash
