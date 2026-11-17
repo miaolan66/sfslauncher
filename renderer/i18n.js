@@ -96,9 +96,28 @@
 
     var pats = window.SRC_PAT || [];
     for (var i = 0; i < pats.length; i++) {
-      if (pats[i][0].test(t)) {
-        var rep = t.replace(pats[i][0], pats[i][1]);
+      var src = pats[i][0], dst = pats[i][1], rep = null;
+      if (src.test(t)) {
+        // 单参数拼接串（如「导入失败：{详情}」）：详情先递归翻译，再拼回
+        if (dst.indexOf('$2') < 0 && dst.indexOf('$1') >= 0) {
+          var m1 = src.exec(t);
+          if (m1 && m1[1] && m1[1].length < t.length) {
+            var tail1 = trText(m1[1]);
+            rep = t.replace(src, function () { return dst.replace('$1', function () { return tail1; }); });
+          }
+        }
+        if (rep == null) rep = t.replace(src, dst);
         if (rep !== t) return s.replace(t, rep);
+      }
+    }
+
+    var pres = window.SRC_PRE || [];
+    for (var j = 0; j < pres.length; j++) {
+      var mm = pres[j][0].exec(t);
+      if (mm && mm[1] && mm[1].length < t.length) {
+        var tail = trText(mm[1]);
+        var full = t.replace(pres[j][0], function () { return pres[j][1] + tail; });
+        if (full !== t) return s.replace(t, full);
       }
     }
 

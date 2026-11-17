@@ -516,6 +516,9 @@ function isValidSolarPackage(dir) {
 }
 
 const TYPE_LABEL_CN = { parts: '部件', texture: '涂装包', blueprint: '蓝图', dll: 'DLL', solar: '扩展包', packed: '压缩包', unknown: '未知' };
+function typeLabel(type) {
+  return tx('type_' + (type || 'unknown'), TYPE_LABEL_CN[type] || type || '');
+}
 
 function uniquePath(p) {
   if (!fs.existsSync(p)) return p;
@@ -551,20 +554,40 @@ async function deployModFile(zipPath, type) {
   return fsTask('deploy', { zipPath, type, dataDir: sfsDataDir() });
 }
 
+// ---------- 原生界面文案（托盘 / 文件对话框 / 导出文件）----------
+// 文案由渲染层按当前语言推送，主进程不维护英文；未收到推送时（窗口尚未创建）退回内置中文，
+// 保证托盘在启动最早期也能正常显示，推送到达后再刷新。
+let TXT = {};
+function tx(key, fallback, a, b, c) {
+  let s = TXT[key];
+  if (s == null || s === '') s = fallback;
+  if (s == null) return key;
+  const args = [a, b, c];
+  return String(s).replace(/\{(\d)\}/g, (m, n) => {
+    const v = args[Number(n) - 1];
+    return v == null ? '' : String(v);
+  });
+}
+
+function applyTrayTexts(t) {
+  if (!t || t.isDestroyed()) return;
+  try { t.setToolTip(tx('trayTip', 'SFS 启动器')); } catch (e) {}
+  try {
+    t.setContextMenu(Menu.buildFromTemplate([
+      { label: tx('trayShow', '显示主界面'), click: () => showMainWindow() },
+      { type: 'separator' },
+      { label: tx('trayQuit', '退出'), click: () => quitApp() }
+    ]));
+  } catch (e) {}
+}
+
 // ---------- 系统托盘 ----------
 let tray = null;
 function createTray() {
   if (tray && !tray.isDestroyed()) return;
   const bindTray = (t) => {
-    t.setToolTip('SFS 启动器');
     t.on('click', () => showMainWindow());
-    try {
-      t.setContextMenu(Menu.buildFromTemplate([
-        { label: '显示主界面', click: () => showMainWindow() },
-        { type: 'separator' },
-        { label: '退出', click: () => quitApp() }
-      ]));
-    } catch (e) {}
+    applyTrayTexts(t);
   };
   // 托盘图标固定用产品图标（与桌面快捷方式、任务栏同源）。之前优先取 process.execPath 的图标，
   // 开发态那是 electron.exe，托盘会变成 Electron 的蓝球；打包态才正常，两头不一致。
@@ -590,6 +613,13 @@ function ensureTray() {
   createTray();
   setTimeout(ensureTray, 2000);
 }
+
+// 渲染层推送原生界面文案（切语言时会再推一次）
+ipcMain.handle('app:set-texts', (_e, bundle) => {
+  TXT = (bundle && typeof bundle === 'object' && !Array.isArray(bundle)) ? bundle : {};
+  try { if (tray && !tray.isDestroyed()) applyTrayTexts(tray); } catch (e) {}
+  return { success: true };
+});
 // 开机自启（--hidden）延迟建窗：等桌面 / DWM / 显卡就绪；期间被唤起则立即建窗并强制显示
 let hiddenCreateTimer = null;
 let forceShowNext = false;
@@ -1504,7 +1534,7 @@ ipcMain.handle('steam:scan', async () => {
 
   ipcMain.handle('game:selectPath', async () => {
     const r = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openFile'], filters: [{ name: '可执行文件', extensions: ['exe'] }]
+      properties: ['openFile'], filters: [{ name: tx('filterExe', '可执行文件'), extensions: ['exe'] }]
     });
     if (r.canceled) return { canceled: true };
     return { canceled: false, path: r.filePaths[0] };
@@ -1965,12 +1995,12 @@ ipcMain.handle('steam:scan', async () => {
 
   ipcMain.handle('mod:pickZip', async (_e, kind) => {
     const filterMap = {
-      parts: [{ name: '部件（.pack / .zip）', extensions: ['zip', 'pack'] }],
-      texture: [{ name: '涂装包（.zip）', extensions: ['zip'] }],
-      dll: [{ name: 'DLL（.dll / .zip）', extensions: ['zip', 'dll'] }],
-      blueprint: [{ name: '蓝图（.zip）', extensions: ['zip'] }]
+      parts: [{ name: tx('filterParts', '部件（.pack / .zip）'), extensions: ['zip', 'pack'] }],
+      texture: [{ name: tx('filterTexture', '涂装包（.zip）'), extensions: ['zip'] }],
+      dll: [{ name: tx('filterDll', 'DLL（.dll / .zip）'), extensions: ['zip', 'dll'] }],
+      blueprint: [{ name: tx('filterBlueprint', '蓝图（.zip）'), extensions: ['zip'] }]
     };
-    const filters = filterMap[kind] || [{ name: '模组文件', extensions: ['zip', 'pack', 'dll'] }];
+    const filters = filterMap[kind] || [{ name: tx('filterModAny', '模组文件'), extensions: ['zip', 'pack', 'dll'] }];
     const r = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters
@@ -1984,7 +2014,7 @@ ipcMain.handle('steam:scan', async () => {
   ipcMain.handle('mod:pickSolar', async () => {
     const r = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
-      filters: [{ name: '扩展包（ZIP）', extensions: ['zip'] }]
+      filters: [{ name: tx('filterSolar', '扩展包（ZIP）'), extensions: ['zip'] }]
     });
     if (r.canceled) return { canceled: true };
     const zipPath = r.filePaths[0];
@@ -2082,7 +2112,9 @@ ipcMain.handle('steam:scan', async () => {
       const mirrorDir = path.join(app.getPath('userData'), 'logs-mirror');
       fs.mkdirSync(mirrorDir, { recursive: true });
       const mirror = path.join(mirrorDir, 'Player_filtered_' + Date.now() + '.log');
-      const header = '# 本文件为 Player.log 的过滤镜像，原日志未被修改\n# 来源：' + logPath + '\n# 原日志 ' + lines.length + ' 行，保留 ' + outLines.length + ' 行\n\n';
+      const header = tx('logMirrorHead', '# 本文件为 Player.log 的过滤镜像，原日志未被修改')
+        + '\n' + tx('logMirrorSrc', '# 来源：') + logPath
+        + '\n' + tx('logMirrorStat', '# 原日志 {1} 行，保留 {2} 行', lines.length, outLines.length) + '\n\n';
       fs.writeFileSync(mirror, header + outLines.join('\n'), 'utf8');
       await shell.openPath(mirror);
       return { success: true };
@@ -2156,26 +2188,26 @@ ipcMain.handle('steam:scan', async () => {
       const inst = cfg.mods.installed || [];
       if (!inst.length) return { success: false, error: '当前实例没有已安装模组' };
       const r = await dialog.showSaveDialog(mainWindow, {
-        title: '导出模组清单',
+        title: tx('dlgExportList', '导出模组清单'),
         defaultPath: 'sfs-mod-list.' + (fmt === 'md' ? 'md' : 'txt'),
-        filters: [{ name: fmt === 'md' ? 'Markdown' : '文本', extensions: [fmt === 'md' ? 'md' : 'txt'] }]
+        filters: [{ name: fmt === 'md' ? 'Markdown' : tx('filterText', '文本'), extensions: [fmt === 'md' ? 'md' : 'txt'] }]
       });
       if (r.canceled || !r.filePath) return { canceled: true };
       const isMd = fmt === 'md';
       const lines = [];
       if (isMd) {
-        lines.push('# SFS 模组清单', '');
-        lines.push('导出时间：' + new Date().toLocaleString() + '　共 ' + inst.length + ' 项', '');
-        lines.push('| 名称 | 类型 | 版本 | 文件数 |');
+        lines.push(tx('expTitleMd', '# SFS 模组清单'), '');
+        lines.push(tx('expMeta', '导出时间：{1}　共 {2} 项', new Date().toLocaleString(), inst.length), '');
+        lines.push(tx('expHeadMd', '| 名称 | 类型 | 版本 | 文件数 |'));
         lines.push('|---|---|---|---|');
         for (const m of inst) {
-          lines.push('| ' + (m.name || '') + ' | ' + (TYPE_LABEL_CN[m.type] || m.type || '') + ' | ' + (m.version || '-') + ' | ' + (m.count || 0) + ' |');
+          lines.push('| ' + (m.name || '') + ' | ' + typeLabel(m.type) + ' | ' + (m.version || '-') + ' | ' + (m.count || 0) + ' |');
         }
       } else {
-        lines.push('SFS 模组清单　共 ' + inst.length + ' 项　' + new Date().toLocaleString());
+        lines.push(tx('expTitleTxt', 'SFS 模组清单　共 {1} 项　{2}', inst.length, new Date().toLocaleString()));
         lines.push('');
         inst.forEach((m, i) => {
-          lines.push((i + 1) + '. ' + (m.name || '') + ' [' + (TYPE_LABEL_CN[m.type] || m.type || '') + ']' + (m.version ? ' v' + m.version : '') + '（' + (m.count || 0) + ' 个文件）');
+          lines.push((i + 1) + '. ' + (m.name || '') + ' [' + typeLabel(m.type) + ']' + (m.version ? ' v' + m.version : '') + tx('expFileCount', '（{1} 个文件）', m.count || 0));
         });
       }
       fs.writeFileSync(r.filePath, lines.join('\r\n'), 'utf8');
@@ -2192,9 +2224,9 @@ ipcMain.handle('steam:scan', async () => {
       const base = inst.installDir || (inst.exePath ? path.dirname(inst.exePath) : '');
       if (!base || !fs.existsSync(base)) return { success: false, error: '游戏目录不存在' };
       const r = await dialog.showSaveDialog(mainWindow, {
-        title: '备份实例数据',
-        defaultPath: (inst.name || 'sfs') + '-备份-' + new Date().toISOString().slice(0, 10) + '.sfsbak',
-        filters: [{ name: 'SFS 实例备份', extensions: ['sfsbak'] }]
+        title: tx('dlgBackup', '备份实例数据'),
+        defaultPath: (inst.name || 'sfs') + tx('backupSuffix', '-备份-') + new Date().toISOString().slice(0, 10) + '.sfsbak',
+        filters: [{ name: tx('filterSfsBak', 'SFS 实例备份'), extensions: ['sfsbak'] }]
       });
       if (r.canceled || !r.filePath) return { canceled: true };
       // 收集要打包的子目录（存在才打）
@@ -2251,9 +2283,9 @@ ipcMain.handle('steam:scan', async () => {
         }
       } catch (e) {}
       const r = await dialog.showOpenDialog(mainWindow, {
-        title: '选择备份文件',
+        title: tx('dlgRestore', '选择备份文件'),
         properties: ['openFile'],
-        filters: [{ name: 'SFS 实例备份', extensions: ['sfsbak', 'zip'] }]
+        filters: [{ name: tx('filterSfsBak', 'SFS 实例备份'), extensions: ['sfsbak', 'zip'] }]
       });
       if (r.canceled || !r.filePaths.length) return { canceled: true };
       const Zip = getAdmZip();
@@ -2276,8 +2308,8 @@ ipcMain.handle('steam:scan', async () => {
   // 首页实例卡片背景图选择
   ipcMain.handle('hero:pickBg', async () => {
     const r = await dialog.showOpenDialog(mainWindow, {
-      title: '选择实例卡片背景图',
-      filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
+      title: tx('dlgHeroBg', '选择实例卡片背景图'),
+      filters: [{ name: tx('filterImage', '图片'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
     });
     if (r.canceled) return { success: false, canceled: true };
     const cfg = loadConfig();
@@ -2296,8 +2328,8 @@ ipcMain.handle('steam:scan', async () => {
   // 主题背景壁纸选择：仅返回本地图片路径，压缩/取色与持久化由渲染端完成
   ipcMain.handle('wallpaper:pick', async () => {
     const r = await dialog.showOpenDialog(mainWindow, {
-      title: '选择主题背景壁纸',
-      filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
+      title: tx('dlgWallpaper', '选择主题背景壁纸'),
+      filters: [{ name: tx('filterImage', '图片'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
     });
     if (r.canceled) return { success: false, canceled: true };
     return { success: true, path: r.filePaths[0] };
@@ -2585,7 +2617,7 @@ ipcMain.handle('steam:scan', async () => {
   ipcMain.handle('cloud:pickDir', async () => {
     const r = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory'],
-      title: '选择云盘同步目录（如 OneDrive / 百度网盘 / 坚果云 本地同步文件夹）'
+      title: tx('dlgCloudDir', '选择云盘同步目录（如 OneDrive / 百度网盘 / 坚果云 本地同步文件夹）')
     });
     if (r.canceled) return { canceled: true };
     const cfg = loadConfig();
@@ -2809,10 +2841,10 @@ ipcMain.handle('steam:scan', async () => {
         }
         keep.sort((a, b) => a - b);
         const filtered = keep.map(i => lines[i]).join('\n');
-        const mirror = path.join(tmpDir, '过滤-' + path.basename(f) + '.txt');
+        const mirror = path.join(tmpDir, tx('logFilterFilePrefix', '过滤-') + path.basename(f) + '.txt');
         fs.writeFileSync(mirror,
-          '===== SFS 日志过滤镜像（原日志未被修改）=====\r\n来源：' + f + '\r\n生成时间：' + new Date().toLocaleString() + '\r\n\r\n' +
-          (filtered || '（未在日志中检索到明显的错误/警告关键字，以下为完整日志末尾 200 行）\r\n' + lines.slice(-200).join('\n')),
+          tx('logFilterHead', '===== SFS 日志过滤镜像（原日志未被修改）=====\r\n来源：{1}\r\n生成时间：{2}\r\n\r\n', f, new Date().toLocaleString()) +
+          (filtered || tx('logFilterNoHit', '（未在日志中检索到明显的错误/警告关键字，以下为完整日志末尾 200 行）') + '\r\n' + lines.slice(-200).join('\n')),
           'utf8');
         shell.openPath(mirror);
         opened.push(mirror);
@@ -2829,7 +2861,7 @@ ipcMain.handle('steam:scan', async () => {
       if (!entry) return { success: false, error: '模组不存在' };
       const root = sfsDataDir();
       const r = await dialog.showSaveDialog(mainWindow, {
-        title: '导出模组',
+        title: tx('dlgExportMod', '导出模组'),
         defaultPath: (entry.name || 'mod').replace(/[\\/:*?"<>|]/g, '_') + '.zip',
         filters: [{ name: 'ZIP', extensions: ['zip'] }]
       });

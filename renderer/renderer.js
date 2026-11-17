@@ -188,14 +188,17 @@ function esc(s) {
 
 function toast(msg, ms = 2600) {
   const t = $('#toast');
-  t.textContent = msg;
+  const text = String(msg == null ? '' : msg);
+  // 主进程返回的错误串也在映射表里，先翻一次，避免延迟到下一帧
+  t.textContent = window.I18NTrText ? window.I18NTrText(text) : text;
   t.hidden = false;
   clearTimeout(toast._tm);
   toast._tm = setTimeout(() => { t.hidden = true; }, ms);
 }
 
 function showModal(title, bodyHtml) {
-  $('#modal-title').textContent = title;
+  const tr = (v) => (window.I18NTrText ? window.I18NTrText(String(v)) : v);
+  $('#modal-title').textContent = tr(title);
   $('#modal-body').innerHTML = bodyHtml;
   $('#modal').hidden = false;
   document.body.classList.add('modal-open');
@@ -207,12 +210,13 @@ function appConfirm(o) {
   const opts = o || {};
   return new Promise(resolve => {
     const dlg = $('#confirm-dialog');
-    $('#confirm-title').textContent = opts.title || '确认操作';
+    const tr = (v) => (window.I18NTrText ? window.I18NTrText(String(v)) : v);
+    $('#confirm-title').textContent = tr(opts.title || '确认操作');
     const body = $('#confirm-body');
-    body.textContent = opts.body || '';
+    body.textContent = tr(opts.body || '');
     const ok = $('#confirm-ok'), cancel = $('#confirm-cancel');
-    ok.textContent = opts.okText || '确定';
-    cancel.textContent = opts.cancelText || '取消';
+    ok.textContent = tr(opts.okText || '确定');
+    cancel.textContent = tr(opts.cancelText || '取消');
     cancel.style.display = (opts.cancelText === null) ? 'none' : '';
     ok.classList.toggle('danger', !!opts.danger);
     dlg.hidden = false;
@@ -304,7 +308,6 @@ function initLangSwitch() {
   const cur = $('#lang-current');
   if (!btn || !menu) return;
   const sync = (lang) => {
-    if (cur) cur.textContent = (window.LangLabel && LangLabel[lang]) || lang;
     $$('#lang-menu .lang-option').forEach(o => o.classList.toggle('active', o.dataset.lang === lang));
   };
   btn.addEventListener('click', (e) => {
@@ -324,6 +327,28 @@ function initLangSwitch() {
   I18NOnChange(sync);
 }
 
+// 原生界面文案（托盘 / 文件对话框 / 导出文件）打包推给主进程，主进程不单独维护英文
+function pushNativeTexts() {
+  try {
+    if (!window.launcher || !window.launcher.appSetTexts) return;
+    const keys = [
+      'trayTip', 'trayShow', 'trayQuit',
+      'filterExe', 'filterParts', 'filterTexture', 'filterDll', 'filterBlueprint', 'filterModAny',
+      'filterSolar', 'filterText', 'filterImage', 'filterSfsBak',
+      'dlgExportList', 'dlgBackup', 'dlgRestore', 'dlgHeroBg', 'dlgWallpaper', 'dlgCloudDir', 'dlgExportMod',
+      'backupSuffix', 'expTitleMd', 'expMeta', 'expHeadMd', 'expTitleTxt', 'expFileCount',
+      'type_parts', 'type_texture', 'type_blueprint', 'type_dll', 'type_solar', 'type_packed', 'type_unknown',
+      'logMirrorHead', 'logMirrorSrc', 'logMirrorStat', 'logFilterFilePrefix', 'logFilterHead', 'logFilterNoHit'
+    ];
+    const bundle = {};
+    keys.forEach(k => {
+      const v = t('native.' + k);
+      if (v && v !== 'native.' + k) bundle[k] = v;
+    });
+    window.launcher.appSetTexts(bundle);
+  } catch (e) {}
+}
+
 function setAppLang(lang) {
   if (!I18NSetLang(lang)) return;
   state.cfg.lang = lang;
@@ -337,6 +362,8 @@ function setAppLang(lang) {
   try { loadWorldStats(); } catch (e) {}
   try { if ($('#view-modstore') && $('#view-modstore').classList.contains('active')) loadModstore(); } catch (e) {}
   try { if (window.__lpSync) window.__lpSync(); } catch (e) {}
+  try { window.Onboarding && Onboarding.refreshChecklist(); } catch (e) {}
+  try { pushNativeTexts(); } catch (e) {}
 }
 
 // ---- 配置加载 ----
@@ -351,6 +378,8 @@ async function init() {
   if (!Array.isArray(state.cfg.mods.pending)) state.cfg.mods.pending = [];
   if (!Array.isArray(state.cfg.mods.installed)) state.cfg.mods.installed = [];
   try { window.__bt && window.__bt('config_loaded'); } catch (e) {}
+  // 把托盘/对话框/导出文件的文案推给主进程，早于任何原生菜单创建
+  try { pushNativeTexts(); } catch (e) {}
   // 先把配置交给主题控制器，并在首帧前定好深浅/毛玻璃材质类，避免首帧闪默认主题。
   AppTheme.setCfg(state.cfg);
   AppTheme.applyTheme(state.cfg.theme || 'dark');
@@ -1990,8 +2019,13 @@ $('#han-cancel').addEventListener('click', () => hideDlg('han-dialog'));
 $('#han-run').addEventListener('click', async () => {
   const r = await window.launcher.hanOpen(hanInstId);
   hideDlg('han-dialog');
-  if (r && r.success) toast('已启动汉化注入器，在它里面打开两个开关再点「开始游戏」');
-  else toast((r && r.error) || '启动失败');
+  if (r && r.success) {
+    // 教程清单按"打开过注入器"判定，注入结果启动器无法确认
+    state.cfg.hanOpened = true;
+    try { window.launcher.configSave(state.cfg); } catch (e) {}
+    try { window.Onboarding && Onboarding.refreshChecklist(); } catch (e) {}
+    toast('已启动汉化注入器，在它里面打开两个开关再点「开始游戏」');
+  } else toast((r && r.error) || '启动失败');
 });
 
 // ---- 下载队列 ----
@@ -2121,6 +2155,15 @@ async function loadModstore() {
 
     grid.innerHTML = filtered.map((m) => {
       const realIdx = mods.indexOf(m); // 保留原始索引用于事件绑定
+      // 热度是站点数据（形如 6.7万）：英文模式换成 67k，避免英文界面残留中文单位
+      const heatText = (function () {
+        const h = m.heat || '';
+        if (!h || !window.I18NGetLang || window.I18NGetLang() !== 'en') return h;
+        const mm = /^(\d+(?:\.\d+)?)万$/.exec(h);
+        if (!mm) return h;
+        const k = Math.round(parseFloat(mm[1]) * 100) / 10;
+        return (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
+      })();
       const imgs = (m.images || []);
       const img = imgs[0] || '';
       const tags = (m.tags || []).map(t => `<span class="ms-tag">${esc(t)}</span>`).join('');
@@ -2149,7 +2192,7 @@ async function loadModstore() {
             <span>大小：${esc(m.size || '未知')}</span>
             ${m.compat ? `<span class="ms-compat">兼容：${esc(m.compat)}</span>` : ''}
             ${m.date ? `<span>更新：${esc(m.date)}</span>` : ''}
-            ${m.heat ? `<span>热度：${esc(m.heat)}</span>` : ''}
+            ${heatText ? `<span>热度：${esc(heatText)}</span>` : ''}
             ${m.type ? `<span>格式：${esc(m.type)}</span>` : ''}
           </div>
           <div class="ms-tags">${tags}</div>
@@ -2298,7 +2341,8 @@ function refreshDlProgressPanel(tasks) {
   // 超过3条显示提示
   if (tasks.length > 3) {
     $('#dl-more-tip').hidden = false;
-    $('#dl-more-link').textContent = `还有 ${tasks.length - 3} 项任务，前往下载队列查看全部 ›`;
+    const moreText = `还有 ${tasks.length - 3} 项任务，前往下载队列查看全部 ›`;
+    $('#dl-more-link').textContent = window.I18NTrText ? window.I18NTrText(moreText) : moreText;
   } else {
     $('#dl-more-tip').hidden = true;
   }

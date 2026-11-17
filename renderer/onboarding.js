@@ -1,79 +1,89 @@
 'use strict';
 
-// 新手引导（Unity 式聚光分步引导）。
-// 首启自动播放一次，可上一步/下一步/跳过；完成后写 cfg.onboardingDone，
-// 设置页「重看新手引导」可随时重播。纯前端，不改动任何业务逻辑。
+// 新手教程：5 页讲解 → 三项上手任务清单。替换原先的 8 步聚光引导。
+// 讲解首启自动播一次（cfg.onboardingDone），清单在讲解结束后或下次启动时出现，
+// 三项全部完成或手动隐藏后写 cfg.learnDone，不再打扰。
+// 纯前端，不改动业务逻辑；注入汉化只能确认"打开过注入器"，按 cfg.hanOpened 判定。
 (function () {
-  const STEPS = [
+  const PAGES = [
     {
-      view: 'home',
-      target: '#instance-hero',
-      title: '当前游戏实例',
-      titleEn: 'Current instance',
-      text: '这张卡片显示当前选中的实例和安装路径，右下「开始游戏」直接启动；右键卡片可以给它单独设一张背景图。',
-      textEn: 'This card shows the selected instance and its install path. Start Game at the bottom right launches it; right-click the card to give it a custom background.'
+      t: '这套工具管什么',
+      te: 'What this tool handles',
+      b: '四件事：游戏实例、模组、存档备份、汉化。装好游戏后多数操作都围绕一个「当前实例」，切换实例不会影响其它版本的游戏目录。',
+      be: 'Four things: game instances, mods, backups, and localization. Once the game is installed, most work happens around one active instance; switching between instances never touches the other installs.',
+      k: ['一个实例对应一份游戏目录', '切换只改变界面操作的对象'],
+      ke: ['One instance maps to one game folder', 'Switching only changes what the UI acts on']
     },
     {
-      view: 'home',
-      target: '#btn-home-add',
-      title: '添加游戏实例',
-      titleEn: 'Add an instance',
-      text: '点这里手动添加：选游戏目录或直接选 SFS 的 exe。旁边「自动检测 Steam」会扫描已装 Steam 里的 SFS。',
-      textEn: 'Add one manually here: pick the game folder or the SFS executable. Auto-detect Steam next to it scans installed Steam libraries.'
+      t: '先把游戏挂进来',
+      te: 'Add the game first',
+      b: '游戏库可以扫描 Steam 库，也可以手动选目录。识别到 Spaceflight Simulator 后加入列表，只有 SFS 能被添加。',
+      be: 'The Library scans Steam libraries or takes a folder you pick. Once Spaceflight Simulator is found it joins the list — only SFS can be added.',
+      k: ['Steam 装在非默认位置时，先指定它的根目录', '添加时只校验 SFS，不认其它游戏'],
+      ke: ['If Steam sits in a non-default path, set its root folder first', 'Only SFS passes the check, other games are rejected']
     },
     {
-      target: '.nav-item[data-view="games"]',
-      title: '游戏库',
-      titleEn: 'Library',
-      text: '所有实例都在这一页：切换当前实例、改名称和路径、启动游戏。首页展示的就是这里选中的实例。',
-      textEn: 'Every instance lives on this page: switch the active one, rename it, change its path, launch it. The home page shows whichever one is selected.'
+      t: '模组怎么装',
+      te: 'How mods get installed',
+      b: '商店挑好下载，文件先落到「待导入」，确认类型后才部署进游戏目录。部件、涂装包、蓝图、DLL、扩展包五类，各有对应的目标目录。',
+      be: 'Pick in the store, download, and the file lands in Pending. Nothing touches the game folder until you confirm the type. Parts, texture packs, blueprints, DLLs and solar packs each go to their own target folder.',
+      k: ['下载阶段不写入游戏目录', '装错了可以在已装列表里移除'],
+      ke: ['Downloads never write into the game folder', 'Anything installed by mistake can be removed from the installed list']
     },
     {
-      target: '.nav-item[data-view="mods"]',
-      title: '模组',
-      titleEn: 'Mods',
-      text: '管理已装模组：按类型筛选，扫描已装、清理重复、导入扩展包和部件（.pack），也能导出清单。',
-      textEn: 'Manage installed mods: filter by type, rescan, clean duplicates, import solar packs and .pack parts, and export the list.'
+      t: '汉化两种方式',
+      te: 'Two ways to localize',
+      b: '本体汉化把社区词表写进游戏数据目录，只多一个 txt，删掉即恢复英文；DLL 汉化在游戏运行时注入进程，不落盘。两个开关都在注入器界面里，启动器不代管。',
+      be: 'Text localization writes a community word list into the game data folder — one txt, delete it to go back to English. DLL localization injects into the running process and writes nothing to disk. Both switches live in the injector, not here.',
+      k: ['部分杀毒软件会拦截进程注入', '注入被拦下时游戏仍显示英文'],
+      ke: ['Some antivirus tools block process injection', 'When it is blocked the game stays in English']
     },
     {
-      target: '.nav-item[data-view="modstore"]',
-      title: '模组商店',
-      titleEn: 'Mod Store',
-      text: '浏览在线模组。下载的文件先进「待安装」，确认类型后再部署到游戏目录，不会直接写进游戏。',
-      textEn: 'Browse online mods. Downloads land in Pending first; confirm the type before anything is written into the game folder.'
-    },
-    {
-      target: '.nav-item[data-view="downloads"]',
-      title: '下载队列',
-      titleEn: 'Downloads',
-      text: '下载进度都在这里，失败可以重试，完成后可直接部署或打开所在文件夹。',
-      textEn: 'Progress lives here. Failed tasks can be retried; finished ones can be deployed or opened in their folder.'
-    },
-    {
-      target: '.nav-item[data-view="saves"]',
-      title: '存档',
-      titleEn: 'Saves',
-      text: '查看存档并创建备份。改坏或误删存档时可以从备份还原，支持还原到单个存档。',
-      textEn: 'Inspect saves and create backups. Restore from one when a save is corrupted or deleted, down to a single save.'
-    },
-    {
-      target: '.nav-item[data-view="settings"]',
-      title: '设置',
-      titleEn: 'Settings',
-      text: '外观主题、毛玻璃／琉璃材质、壁纸和取色都在这里。开启琉璃后可以用壁纸自动取色，也能手动指定强调色。',
-      textEn: 'Theme, glass and Liuli material, wallpaper and colour extraction. Liuli can derive accents from the wallpaper, or you can pin one yourself.'
+      t: '备份和外观',
+      te: 'Backups and appearance',
+      b: '存档页一键备份，可以存本地、云盘同步目录或 WebDAV，改坏了能还原。外观支持深浅色、壁纸取色和五档毛玻璃，弱机可以降到 Aero 或纯色。',
+      be: 'One-click backups on the Saves page, kept locally, in a cloud sync folder, or on WebDAV, restorable when something breaks. Appearance covers dark/light, wallpaper-derived accents and five glass levels — weaker machines can drop to Aero or solid.',
+      k: ['备份包含模组与存档数据', '云端备份走 WebDAV 或同步文件夹'],
+      ke: ['Backups include mods and save data', 'Cloud backups go through WebDAV or a sync folder']
     }
   ];
 
-  function isEn() { return window.I18NGetLang && window.I18NGetLang() === 'en'; }
-  function L(zh, en) { return isEn() ? en : zh; }
+  const TASKS = [
+    {
+      id: 'inst',
+      zh: '添加一个游戏实例',
+      en: 'Add a game instance',
+      hintZh: '游戏库 → 扫描 Steam 库，或手动选目录',
+      hintEn: 'Library → scan Steam libraries, or pick a folder manually',
+      view: 'games'
+    },
+    {
+      id: 'mod',
+      zh: '导入一个模组',
+      en: 'Import a mod',
+      hintZh: '模组页导入部件、涂装包或蓝图，或从商店下载',
+      hintEn: 'Import parts, texture packs or blueprints on the Mods page, or download from the store',
+      view: 'mods'
+    },
+    {
+      id: 'han',
+      zh: '打开汉化注入器',
+      en: 'Open the localization injector',
+      hintZh: '游戏库右键实例 → 注入汉化（打开即算完成）',
+      hintEn: 'Right-click an instance in the Library → Inject localization (opening it counts)',
+      view: 'games'
+    }
+  ];
 
   let cfgRef = null;
-  let idx = 0;
-  let layer = null, spot = null, tip = null, titleEl = null, countEl = null, bodyEl = null;
-  let prevBtn = null, nextBtn = null, skipBtn = null;
-  let currentTarget = null;
-  let running = false;
+  let page = 0;
+  let guideEl = null, cardEl = null;
+  let checkEl = null, checkTimer = null;
+  let guideRunning = false;
+  let checkVisible = false;
+
+  function isEn() { return window.I18NGetLang && window.I18NGetLang() === 'en'; }
+  function L(zh, en) { return isEn() ? en : zh; }
 
   function mk(tag, cls, text) {
     const n = document.createElement(tag);
@@ -82,172 +92,216 @@
     return n;
   }
 
-  function build() {
-    if (layer) return;
-    layer = mk('div');
-    layer.id = 'ob-layer';
-    layer.hidden = true;
-
-    spot = mk('div');
-    spot.id = 'ob-spot';
-
-    tip = mk('div');
-    tip.id = 'ob-tip';
-
-    const head = mk('div', 'ob-head');
-    titleEl = mk('div', 'ob-title');
-    countEl = mk('div', 'ob-count');
-    head.appendChild(titleEl);
-    head.appendChild(countEl);
-
-    bodyEl = mk('div', 'ob-body');
-
-    const foot = mk('div', 'ob-foot');
-    skipBtn = mk('button', 'ob-btn ob-skip', L('跳过', 'Skip'));
-    skipBtn.type = 'button';
-    const nav = mk('div', 'ob-nav');
-    prevBtn = mk('button', 'ob-btn', L('上一步', 'Back'));
-    prevBtn.type = 'button';
-    nextBtn = mk('button', 'ob-btn ob-next', L('下一步', 'Next'));
-    nextBtn.type = 'button';
-    nav.appendChild(prevBtn);
-    nav.appendChild(nextBtn);
-    foot.appendChild(skipBtn);
-    foot.appendChild(nav);
-
-    tip.appendChild(head);
-    tip.appendChild(bodyEl);
-    tip.appendChild(foot);
-    layer.appendChild(spot);
-    layer.appendChild(tip);
-    document.body.appendChild(layer);
-
-    prevBtn.addEventListener('click', () => go(idx - 1));
-    nextBtn.addEventListener('click', () => {
-      if (idx >= STEPS.length - 1) finish(true);
-      else go(idx + 1);
-    });
-    skipBtn.addEventListener('click', () => finish(true));
-
-    window.addEventListener('resize', reposition);
-    document.addEventListener('scroll', reposition, true);
-    document.addEventListener('keydown', onKey, true);
-    if (window.I18NOnChange) window.I18NOnChange(() => { if (running) render(); });
-  }
-
-  function onKey(e) {
-    if (!running) return;
-    if (e.key === 'Escape') { e.preventDefault(); finish(true); }
-    else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); if (idx >= STEPS.length - 1) finish(true); else go(idx + 1); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); go(idx - 1); }
-  }
-
-  function switchView(view) {
-    if (!view) return;
-    const want = document.querySelector('.nav-item[data-view="' + view + '"]');
-    if (!want) return;
-    if (!want.classList.contains('active')) want.click();
-  }
-
   function save() {
     if (!cfgRef) return;
     try { window.launcher.configSave(cfgRef); } catch (e) {}
   }
 
-  async function go(i) {
-    if (i < 0 || i > STEPS.length - 1) return;
-    idx = i;
-    const step = STEPS[idx];
-    switchView(step.view);
-    if (step.view) await new Promise(r => setTimeout(r, 320));
-    if (!running) return;
-    render();
+  function switchView(view) {
+    if (!view) return;
+    const want = document.querySelector('.nav-item[data-view="' + view + '"]');
+    if (want && !want.classList.contains('active')) want.click();
   }
 
-  function render() {
-    const step = STEPS[idx];
-    let target = document.querySelector(step.target);
-    if (target) {
-      const r0 = target.getBoundingClientRect();
-      if (r0.width === 0 && r0.height === 0) target = null;
+  /* ---------------- 5 页讲解 ---------------- */
+
+  function renderPage() {
+    if (!cardEl) return;
+    const p = PAGES[page];
+    cardEl.innerHTML = '';
+    const head = mk('div', 'ob2-head');
+    head.appendChild(mk('span', 'ob2-step', (page + 1) + ' / ' + PAGES.length));
+    const skip = mk('button', 'ob2-skip', L('跳过', 'Skip'));
+    skip.type = 'button';
+    skip.addEventListener('click', () => closeGuide(true));
+    head.appendChild(skip);
+    cardEl.appendChild(head);
+
+    cardEl.appendChild(mk('div', 'ob2-title', L(p.t, p.te)));
+    cardEl.appendChild(mk('div', 'ob2-body', L(p.b, p.be)));
+
+    const keys = L(p.k, p.ke) || [];
+    if (keys.length) {
+      const ul = mk('ul', 'ob2-keys');
+      keys.forEach(x => {
+        const li = mk('li', null, x);
+        ul.appendChild(li);
+      });
+      cardEl.appendChild(ul);
     }
-    if (!target) {
-      // 目标不存在（页面还没渲染/被裁掉）时顺延，避免卡在空步骤
-      if (idx < STEPS.length - 1) { return go(idx + 1); }
-      return finish(true);
+
+    const foot = mk('div', 'ob2-foot');
+    const back = mk('button', 'ob2-btn', L('上一步', 'Back'));
+    back.type = 'button';
+    back.disabled = page === 0;
+    back.addEventListener('click', () => { if (page > 0) { page--; renderPage(); } });
+    const next = mk('button', 'ob2-btn ob2-primary', page === PAGES.length - 1 ? L('开始', 'Start') : L('下一步', 'Next'));
+    next.type = 'button';
+    next.addEventListener('click', () => {
+      if (page >= PAGES.length - 1) closeGuide(true);
+      else { page++; renderPage(); }
+    });
+    foot.appendChild(back);
+    foot.appendChild(next);
+    cardEl.appendChild(foot);
+  }
+
+  function openGuide() {
+    if (guideRunning) return;
+    if (!guideEl) {
+      guideEl = mk('div', 'ob2-mask');
+      guideEl.id = 'ob2-mask';
+      cardEl = mk('div', 'ob2-card');
+      guideEl.appendChild(cardEl);
+      document.body.appendChild(guideEl);
+      guideEl.addEventListener('click', (e) => {
+        // 点遮罩不关闭，避免误触退出教程
+        e.stopPropagation();
+      });
+      document.addEventListener('keydown', onKey, true);
     }
-    currentTarget = target;
-    titleEl.textContent = L(step.title, step.titleEn);
-    bodyEl.textContent = L(step.text, step.textEn);
-    countEl.textContent = (idx + 1) + ' / ' + STEPS.length;
-    prevBtn.disabled = idx === 0;
-    prevBtn.style.opacity = idx === 0 ? '.45' : '';
-    prevBtn.textContent = L('上一步', 'Back');
-    skipBtn.textContent = L('跳过', 'Skip');
-    nextBtn.textContent = idx === STEPS.length - 1 ? L('完成', 'Done') : L('下一步', 'Next');
-    reposition();
+    guideRunning = true;
+    page = 0;
+    guideEl.hidden = false;
+    renderPage();
   }
 
-  function reposition() {
-    if (!running || !currentTarget) return;
-    const t = currentTarget;
-    if (!t.isConnected) return;
-    const r = t.getBoundingClientRect();
-    const pad = 6;
-    const left = Math.max(8, r.left - pad);
-    const top = Math.max(8, r.top - pad);
-    const w = Math.max(24, r.width + pad * 2);
-    const h = Math.max(24, r.height + pad * 2);
-    spot.style.left = left + 'px';
-    spot.style.top = top + 'px';
-    spot.style.width = w + 'px';
-    spot.style.height = h + 'px';
-
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const tw = 340;
-    let tipLeft = Math.min(Math.max(16, r.left), vw - tw - 16);
-    // 侧栏类窄目标：提示框放到右侧，避免挡住被高亮的那一项
-    if (r.width < 200 && r.left < 220) tipLeft = Math.min(vw - tw - 16, r.right + 18);
-    const below = r.bottom + 16;
-    const above = r.top - 16;
-    const tipH = tip.offsetHeight || 170;
-    let tipTop;
-    if (below + tipH <= vh - 12) tipTop = below;
-    else if (above - tipH >= 12) tipTop = above - tipH;
-    else tipTop = Math.max(12, Math.min(vh - tipH - 12, r.bottom + 16));
-    tip.style.left = tipLeft + 'px';
-    tip.style.top = tipTop + 'px';
+  function onKey(e) {
+    if (!guideRunning) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeGuide(true); }
+    else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+      e.preventDefault();
+      if (page >= PAGES.length - 1) closeGuide(true);
+      else { page++; renderPage(); }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (page > 0) { page--; renderPage(); }
+    }
   }
 
-  function start() {
-    if (!cfgRef) return;
-    build();
-    running = true;
-    layer.hidden = false;
-    go(0);
-  }
-
-  function finish(done) {
-    running = false;
-    if (layer) layer.hidden = true;
-    currentTarget = null;
-    if (done && cfgRef && !cfgRef.onboardingDone) {
+  function closeGuide(finished) {
+    guideRunning = false;
+    if (guideEl) guideEl.hidden = true;
+    if (finished && cfgRef && !cfgRef.onboardingDone) {
       cfgRef.onboardingDone = true;
       save();
     }
+    if (finished) showChecklist();
   }
+
+  /* ---------------- 三项任务清单 ---------------- */
+
+  let modDone = false;
+  let lastSig = '';
+
+  async function readStates() {
+    const out = { inst: false, mod: false, han: false };
+    try {
+      out.inst = !!(cfgRef && Array.isArray(cfgRef.instances) && cfgRef.instances.length);
+      // 优先读已同步的配置，避免等一次 IPC 往返；配置里没有时再问主进程
+      out.mod = !!(cfgRef && cfgRef.mods && Array.isArray(cfgRef.mods.installed) && cfgRef.mods.installed.length);
+    } catch (e) {}
+    out.han = !!(cfgRef && cfgRef.hanOpened);
+    // 已装模组数兜底走主进程；一旦查到非空就缓存，避免每次轮询都读一遍大配置
+    if (!out.mod && !modDone) {
+      try {
+        const r = await window.launcher.modList();
+        modDone = !!(r && Array.isArray(r.installed) && r.installed.length);
+      } catch (e) {}
+    }
+    out.mod = out.mod || modDone;
+    return out;
+  }
+
+  async function renderChecklist() {
+    if (!checkEl) return;
+    const st = await readStates();
+    const sig = (st.inst ? 1 : 0) + (st.mod ? 2 : 0) + (st.han ? 4 : 0);
+    // 轮询期间状态没变就不重建 DOM，避免无意义的重复渲染
+    if (sig === lastSig && checkEl.childElementCount) return;
+    lastSig = sig;
+    const done = TASKS.filter(t => st[t.id]).length;
+
+    checkEl.innerHTML = '';
+    const head = mk('div', 'ob2-check-head');
+    head.appendChild(mk('span', 'ob2-check-title', L('上手任务', 'Getting started')));
+    const cnt = mk('span', 'ob2-check-count', done + ' / ' + TASKS.length);
+    head.appendChild(cnt);
+    const hide = mk('button', 'ob2-check-hide', L('隐藏', 'Hide'));
+    hide.type = 'button';
+    hide.addEventListener('click', () => {
+      if (cfgRef && !cfgRef.learnDone) { cfgRef.learnDone = true; save(); }
+      hideChecklist();
+    });
+    head.appendChild(hide);
+    checkEl.appendChild(head);
+
+    TASKS.forEach(t => {
+      const row = mk('div', 'ob2-check-item' + (st[t.id] ? ' done' : ''));
+      const dot = mk('span', 'ob2-check-dot', st[t.id] ? '✓' : '');
+      row.appendChild(dot);
+      const txt = mk('div', 'ob2-check-text');
+      txt.appendChild(mk('div', 'ob2-check-label', L(t.zh, t.en)));
+      if (!st[t.id]) txt.appendChild(mk('div', 'ob2-check-hint', L(t.hintZh, t.hintEn)));
+      row.appendChild(txt);
+      if (!st[t.id] && t.view) {
+        row.addEventListener('click', () => switchView(t.view));
+        row.classList.add('clickable');
+      }
+      checkEl.appendChild(row);
+    });
+
+    if (done === TASKS.length) {
+      const fin = mk('div', 'ob2-check-done', L('三项完成，可以正常用了', 'All three done — you are set'));
+      checkEl.appendChild(fin);
+      if (cfgRef && !cfgRef.learnDone) { cfgRef.learnDone = true; save(); }
+      setTimeout(hideChecklist, 1600);
+    }
+  }
+
+  function showChecklist() {
+    if (checkVisible) return;
+    if (cfgRef && cfgRef.learnDone) return;
+    if (!checkEl) {
+      checkEl = mk('div', 'ob2-check');
+      checkEl.id = 'ob2-check';
+      document.body.appendChild(checkEl);
+    }
+    checkVisible = true;
+    checkEl.hidden = false;
+    lastSig = '';
+    renderChecklist();
+    if (checkTimer) clearInterval(checkTimer);
+    checkTimer = setInterval(() => {
+      if (!checkVisible) return;
+      renderChecklist();
+    }, 3000);
+  }
+
+  function hideChecklist() {
+    checkVisible = false;
+    if (checkEl) checkEl.hidden = true;
+    if (checkTimer) { clearInterval(checkTimer); checkTimer = null; }
+  }
+
+  /* ---------------- 对外接口 ---------------- */
 
   window.Onboarding = {
     replay(cfg) {
       cfgRef = cfg;
-      start();
+      openGuide();
     },
     maybeAutoStart(cfg) {
       cfgRef = cfg;
       if (window.launcher && window.launcher.smokeMode) return;
-      if (!cfg || cfg.onboardingDone) return;
-      setTimeout(() => { if (!running) start(); }, 800);
+      if (!cfg) return;
+      if (!cfg.onboardingDone) {
+        setTimeout(() => { if (!guideRunning) openGuide(); }, 800);
+        return;
+      }
+      if (!cfg.learnDone) setTimeout(showChecklist, 900);
     },
-    isRunning() { return running; }
+    isRunning() { return guideRunning; },
+    refreshChecklist() { lastSig = ''; if (checkVisible) renderChecklist(); }
   };
 })();

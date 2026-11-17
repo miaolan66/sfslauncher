@@ -53,16 +53,15 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="nav.about">关于</span>
       </div>
 
-      <!-- 语言切换：左下角，点击展开语言列表 -->
+      <!-- 语言切换：左下角，按钮固定显示中英双语，避免只写一种语言时对面看不懂 -->
       <div class="lang-switch" id="lang-switch">
         <div class="lang-menu" id="lang-menu" hidden>
-          <div class="lang-option" data-lang="zh">中文</div>
+          <div class="lang-option" data-lang="zh">简体中文</div>
           <div class="lang-option" data-lang="en">English</div>
         </div>
         <button class="lang-btn" id="lang-btn" data-i18n-title="lang.switch">
           <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z"/></svg>
-          <span id="lang-current">中文</span>
-          <span class="lang-caret">▾</span>
+          <span id="lang-current">语言 / Language</span>
         </button>
       </div>
     </aside>
@@ -247,7 +246,7 @@
               <div class="empty-tip" style="padding:12px 0;" data-i18n="store.noTask">暂无下载任务</div>
             </div>
             <div class="dl-more-tip" id="dl-more-tip" hidden>
-              <a href="javascript:void(0)" id="dl-more-link">还有 N 项任务，前往下载队列查看全部 ›</a>
+              <a href="javascript:void(0)" id="dl-more-link" data-i18n="home.moreTasks">还有 N 项任务，前往下载队列查看全部 ›</a>
             </div>
           </div>
         </div>

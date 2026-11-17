@@ -65,6 +65,8 @@ contextBridge.exposeInMainWorld('launcher', {
   configLoad: () => ipcRenderer.invoke('config:load'),
   configSave: (cfg) => ipcRenderer.invoke('config:save', cfg),
   appInfo: () => ipcRenderer.invoke('app:info'),
+  // 原生界面（托盘 / 文件对话框 / 导出文件）文案，由渲染层按当前语言推送
+  appSetTexts: (bundle) => ipcRenderer.invoke('app:set-texts', bundle),
   glassSetState: (s) => ipcRenderer.invoke('glass:state', s),
   glassMaterialFallback: () => ipcRenderer.invoke('glass:material-fallback'),
   glassInitialSync: () => ipcRenderer.sendSync('glass:initial'),
