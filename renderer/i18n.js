@@ -53,6 +53,12 @@
       var v = raw(key);
       el.textContent = v != null ? fmt(v, {}) : (el.getAttribute('data-i18n-src') || '');
     }
+    var hk = el.getAttribute('data-i18n-html');
+    if (hk) {
+      if (!el.hasAttribute('data-i18n-src')) el.setAttribute('data-i18n-src', el.innerHTML);
+      var hv = raw(hk);
+      el.innerHTML = hv != null ? fmt(hv, {}) : (el.getAttribute('data-i18n-src') || '');
+    }
     var ph = el.getAttribute('data-i18n-ph');
     if (ph) {
       cacheAttr(el, 'placeholder', 'data-i18n-phsrc');
@@ -69,7 +75,7 @@
 
   function apply(root) {
     var base = root || document;
-    var list = base.querySelectorAll('[data-i18n], [data-i18n-ph], [data-i18n-title]');
+    var list = base.querySelectorAll('[data-i18n], [data-i18n-html], [data-i18n-ph], [data-i18n-title]');
     for (var i = 0; i < list.length; i++) applyNode(list[i]);
     if (base.getAttribute && base.getAttribute('data-i18n')) applyNode(base);
   }

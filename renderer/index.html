@@ -154,7 +154,7 @@
         <div class="section-title-row">
           <h2 class="page-title" style="margin:0" data-i18n="mods.title">模组管理</h2>
           <select id="mod-inst-select" class="inst-select" title="选择要管理的游戏实例" data-i18n-title="mods.selectTitle">
-            <option value="">选择实例…</option>
+            <option value="" data-i18n="games.selectInstance">选择实例…</option>
           </select>
         </div>
 
@@ -299,7 +299,7 @@
           <h2 class="page-title" style="margin:0" data-i18n="bp.title">蓝图文件夹</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <select id="bp-inst-select" class="inst-select" title="选择要查看的游戏实例" data-i18n-title="bp.selectTitle">
-              <option value="">选择实例…</option>
+              <option value="" data-i18n="games.selectInstance">选择实例…</option>
             </select>
             <button class="btn small primary" id="btn-bp-import" data-i18n="bp.import">导入蓝图</button>
             <button class="btn small ghost" id="btn-bp-refresh" data-i18n="common.refresh">刷新</button>
@@ -747,8 +747,8 @@
       <div class="han-credit">by Arctic.　QQ 2450278139</div>
       <div class="win-dialog-body">
         <div class="han-line"><span class="han-k" data-i18n="han.dir">游戏目录</span><span class="han-v" id="han-dir">读取中…</span></div>
-        <div class="han-desc"><b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\Custom Translations</code>，并把语言切到该词表。只多一个 txt，删掉即恢复英文。</div>
-        <div class="han-desc"><b>DLL 汉化</b>：游戏运行时注入进程，把模组里的中英文统一成中文字体。不改 <code>Mods</code> 目录，不落盘。</div>
+        <div class="han-desc" data-i18n-html="han.body1"><b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\Custom Translations</code>，并把语言切到该词表。只多一个 txt，删掉即恢复英文。</div>
+        <div class="han-desc" data-i18n-html="han.body2"><b>DLL 汉化</b>：游戏运行时注入进程，把模组里的中英文统一成中文字体。不改 <code>Mods</code> 目录，不落盘。</div>
         <div class="han-warn" data-i18n="han.warn">两个开关都在注入器界面里，由它自己控制，启动器不代管。注入属于进程注入，部分杀软会拦截；被拦截时游戏仍是英文。</div>
         <div class="han-src"><span data-i18n="han.src">开源地址</span> <code>github.com/Arctic-Ice67/SFSChineseInjector</code></div>
       </div>
@@ -763,11 +763,11 @@
   <div class="modal-mask" id="tutorial-modal" hidden>
     <div class="modal">
       <div class="modal-head">
-        <h3>使用教程</h3>
+        <h3 data-i18n="mods.tutorial">使用教程</h3>
         <button class="modal-close" data-close>&times;</button>
       </div>
       <div class="modal-body">
-        <ol class="tutorial">
+        <ol class="tutorial" data-i18n-html="tutorial.body">
           <li><b>添加游戏：</b>进入「游戏库」→ 点「扫描 Steam 库」，找到 SFS 后点「添加」；如 Steam 在非标准位置，先「选择 Steam 目录」。</li>
           <li><b>启动游戏：</b>回到「首页」，在 SFS 卡片上点「启动」（已装 Steam 时走 Steam 协议拉起）。</li>
           <li><b>导入部件（.pack）：</b>从模组商店下载部件包 ZIP → 点「导入部件 .pack」→ 选 ZIP 或 .pack，其中的 .pack 文件平铺部署到 <code>Mods\Custom_Assets\Parts</code>（无嵌套文件夹）；ZIP 内夹带的 .dll 会解压到 <code>Mods</code> 根目录。</li>

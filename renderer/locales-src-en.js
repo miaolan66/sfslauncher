@@ -21,6 +21,8 @@ window.SRC_EN = {
   '试试切换分类或修改搜索关键词': 'Try another category or a different keyword',
   '该世界暂无挑战记录': 'No challenges recorded for this world',
   '正在扫描 Steam 库…': 'Scanning Steam libraries…',
+  '挑战进度': 'Challenge Progress',
+  '游玩时间': 'Playtime',
   '正在打包，请稍候…': 'Packing, hold on…',
   '正在备份…': 'Backing up…',
   '正在测试连接…': 'Testing connection…',
@@ -34,6 +36,10 @@ window.SRC_EN = {
   '仅 SFS 可添加': 'SFS only',
   '添加到我的游戏': 'Add to My Library',
   '暂无世界数据': 'No world data',
+  '选择实例…': 'Select an instance…',
+  '自动': 'Auto',
+  '1 个文件': '1 file',
+  '1 项': '1 item',
   '确认操作': 'Confirm',
   '提示': 'Notice',
   '确定': 'OK',
@@ -126,11 +132,11 @@ window.SRC_EN = {
 
 /* 含数字或用户数据的文案：正则 → 替换串（$1、$2 为捕获组） */
 window.SRC_PAT = [
-  [/^(\d+) 项$/, '{n} items'],
-  [/^(\d+) 个文件$/, '{n} files'],
+  [/^(\d+) 项$/, '$1 items'],
+  [/^(\d+) 个文件$/, '$1 files'],
   [/^(\d+)时(\d+)分$/, '$1h $2m'],
   [/^(\d+)时(\d+)分(\d+)秒$/, '$1h $2m $3s'],
-  [/^已选 (\d+) 项$/, '{n} selected'],
+  [/^已选 (\d+) 项$/, '$1 selected'],
   [/^还有 (\d+) 项任务，前往下载队列查看全部 ›$/, '$1 more tasks — see the full queue ›'],
   [/^自动（(\d+)%）$/, 'Auto ($1%)'],
   [/^已配置：(.+)$/, 'Configured: $1'],
@@ -190,8 +196,7 @@ window.SRC_PAT = [
   [/^下载完成：(.+)$/, 'Download finished: $1'],
   [/^下载失败：(.+)$/, 'Download failed: $1'],
   [/^已取消下载$/, 'Download cancelled'],
-  [/^正在下载：(.+)$/, 'Downloading: $1'],
-  [/^M 项$/, 'M items']
+  [/^正在下载：(.+)$/, 'Downloading: $1']
 ];
 
 /* 前缀类子串（允许出现在拼接串中间） */
@@ -233,5 +238,7 @@ window.SRC_SUB = {
   '已存入云盘同步目录': 'saved to the cloud sync folder',
   '已完成': 'done',
   '本地不留副本': 'no local copy kept',
+  '挑战进度 - ': 'Challenge Progress - ',
+  '游玩时间 - ': 'Playtime - ',
   '读取中…': 'Reading…'
 };

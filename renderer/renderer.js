@@ -897,8 +897,14 @@ const CHAL_ZH = {
   'Reach 1km': '到达 1 公里',
 };
 function chalZh(name) {
-  if (!name) return '未知';
+  const en = window.I18NGetLang && window.I18NGetLang() === 'en';
+  if (!name) return en ? 'Unknown' : '未知';
   const id = String(name).trim();
+  if (en) {
+    // 反向查表：中文名 → 游戏原始挑战 id，再摊平成英文
+    for (const k in CHAL_ZH) if (CHAL_ZH[k] === id) return k.replace(/_/g, ' ');
+    return id.replace(/_/g, ' ');
+  }
   if (CHAL_ZH[id]) return CHAL_ZH[id];
   const low = id.toLowerCase();
   for (const k in CHAL_ZH) if (k.toLowerCase() === low) return CHAL_ZH[k];

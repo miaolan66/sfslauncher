@@ -9,45 +9,64 @@
       view: 'home',
       target: '#instance-hero',
       title: '当前游戏实例',
-      text: '这张卡片显示当前选中的实例和安装路径，右下「开始游戏」直接启动；右键卡片可以给它单独设一张背景图。'
+      titleEn: 'Current instance',
+      text: '这张卡片显示当前选中的实例和安装路径，右下「开始游戏」直接启动；右键卡片可以给它单独设一张背景图。',
+      textEn: 'This card shows the selected instance and its install path. Start Game at the bottom right launches it; right-click the card to give it a custom background.'
     },
     {
       view: 'home',
       target: '#btn-home-add',
       title: '添加游戏实例',
-      text: '点这里手动添加：选游戏目录或直接选 SFS 的 exe。旁边「自动检测 Steam」会扫描已装 Steam 里的 SFS。'
+      titleEn: 'Add an instance',
+      text: '点这里手动添加：选游戏目录或直接选 SFS 的 exe。旁边「自动检测 Steam」会扫描已装 Steam 里的 SFS。',
+      textEn: 'Add one manually here: pick the game folder or the SFS executable. Auto-detect Steam next to it scans installed Steam libraries.'
     },
     {
       target: '.nav-item[data-view="games"]',
       title: '游戏库',
-      text: '所有实例都在这一页：切换当前实例、改名称和路径、启动游戏。首页展示的就是这里选中的实例。'
+      titleEn: 'Library',
+      text: '所有实例都在这一页：切换当前实例、改名称和路径、启动游戏。首页展示的就是这里选中的实例。',
+      textEn: 'Every instance lives on this page: switch the active one, rename it, change its path, launch it. The home page shows whichever one is selected.'
     },
     {
       target: '.nav-item[data-view="mods"]',
       title: '模组',
-      text: '管理已装模组：按类型筛选，扫描已装、清理重复、导入扩展包和部件（.pack），也能导出清单。'
+      titleEn: 'Mods',
+      text: '管理已装模组：按类型筛选，扫描已装、清理重复、导入扩展包和部件（.pack），也能导出清单。',
+      textEn: 'Manage installed mods: filter by type, rescan, clean duplicates, import solar packs and .pack parts, and export the list.'
     },
     {
       target: '.nav-item[data-view="modstore"]',
       title: '模组商店',
-      text: '浏览在线模组。下载的文件先进「待安装」，确认类型后再部署到游戏目录，不会直接写进游戏。'
+      titleEn: 'Mod Store',
+      text: '浏览在线模组。下载的文件先进「待安装」，确认类型后再部署到游戏目录，不会直接写进游戏。',
+      textEn: 'Browse online mods. Downloads land in Pending first; confirm the type before anything is written into the game folder.'
     },
     {
       target: '.nav-item[data-view="downloads"]',
       title: '下载队列',
-      text: '下载进度都在这里，失败可以重试，完成后可直接部署或打开所在文件夹。'
+      titleEn: 'Downloads',
+      text: '下载进度都在这里，失败可以重试，完成后可直接部署或打开所在文件夹。',
+      textEn: 'Progress lives here. Failed tasks can be retried; finished ones can be deployed or opened in their folder.'
     },
     {
       target: '.nav-item[data-view="saves"]',
       title: '存档',
-      text: '查看存档并创建备份。改坏或误删存档时可以从备份还原，支持还原到单个存档。'
+      titleEn: 'Saves',
+      text: '查看存档并创建备份。改坏或误删存档时可以从备份还原，支持还原到单个存档。',
+      textEn: 'Inspect saves and create backups. Restore from one when a save is corrupted or deleted, down to a single save.'
     },
     {
       target: '.nav-item[data-view="settings"]',
       title: '设置',
-      text: '外观主题、毛玻璃／琉璃材质、壁纸和取色都在这里。开启琉璃后可以用壁纸自动取色，也能手动指定强调色。'
+      titleEn: 'Settings',
+      text: '外观主题、毛玻璃／琉璃材质、壁纸和取色都在这里。开启琉璃后可以用壁纸自动取色，也能手动指定强调色。',
+      textEn: 'Theme, glass and Liuli material, wallpaper and colour extraction. Liuli can derive accents from the wallpaper, or you can pin one yourself.'
     }
   ];
+
+  function isEn() { return window.I18NGetLang && window.I18NGetLang() === 'en'; }
+  function L(zh, en) { return isEn() ? en : zh; }
 
   let cfgRef = null;
   let idx = 0;
@@ -84,12 +103,12 @@
     bodyEl = mk('div', 'ob-body');
 
     const foot = mk('div', 'ob-foot');
-    skipBtn = mk('button', 'ob-btn ob-skip', '跳过');
+    skipBtn = mk('button', 'ob-btn ob-skip', L('跳过', 'Skip'));
     skipBtn.type = 'button';
     const nav = mk('div', 'ob-nav');
-    prevBtn = mk('button', 'ob-btn', '上一步');
+    prevBtn = mk('button', 'ob-btn', L('上一步', 'Back'));
     prevBtn.type = 'button';
-    nextBtn = mk('button', 'ob-btn ob-next', '下一步');
+    nextBtn = mk('button', 'ob-btn ob-next', L('下一步', 'Next'));
     nextBtn.type = 'button';
     nav.appendChild(prevBtn);
     nav.appendChild(nextBtn);
@@ -113,6 +132,7 @@
     window.addEventListener('resize', reposition);
     document.addEventListener('scroll', reposition, true);
     document.addEventListener('keydown', onKey, true);
+    if (window.I18NOnChange) window.I18NOnChange(() => { if (running) render(); });
   }
 
   function onKey(e) {
@@ -157,12 +177,14 @@
       return finish(true);
     }
     currentTarget = target;
-    titleEl.textContent = step.title;
-    bodyEl.textContent = step.text;
+    titleEl.textContent = L(step.title, step.titleEn);
+    bodyEl.textContent = L(step.text, step.textEn);
     countEl.textContent = (idx + 1) + ' / ' + STEPS.length;
     prevBtn.disabled = idx === 0;
     prevBtn.style.opacity = idx === 0 ? '.45' : '';
-    nextBtn.textContent = idx === STEPS.length - 1 ? '完成' : '下一步';
+    prevBtn.textContent = L('上一步', 'Back');
+    skipBtn.textContent = L('跳过', 'Skip');
+    nextBtn.textContent = idx === STEPS.length - 1 ? L('完成', 'Done') : L('下一步', 'Next');
     reposition();
   }
 

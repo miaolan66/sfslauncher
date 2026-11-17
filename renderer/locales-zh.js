@@ -76,6 +76,7 @@ I18NRegister('zh', {
   'games.added': '已添加实例',
   'games.noAdded': '暂无实例',
   'games.scanning': '正在扫描 Steam 库…',
+  'games.selectInstance': '选择实例…',
   'games.scanDone': 'Steam 目录：{path}，共发现 {n} 个游戏',
   'games.scanDoneCustom': '已使用 {path}，发现 {n} 个游戏',
 
@@ -100,6 +101,7 @@ I18NRegister('zh', {
   'mods.importSolar': '导入扩展包',
   'mods.openStore': '打开模组商店',
   'mods.tutorial': '使用教程',
+  'tutorial.body': '<li><b>添加游戏：</b>进入「游戏库」→ 点「扫描 Steam 库」，找到 SFS 后点「添加」；如 Steam 在非标准位置，先「选择 Steam 目录」。</li><li><b>启动游戏：</b>回到「首页」，在 SFS 卡片上点「启动」（已装 Steam 时走 Steam 协议拉起）。</li><li><b>导入部件（.pack）：</b>从模组商店下载部件包 ZIP → 点「导入部件 .pack」→ 选 ZIP 或 .pack，其中的 .pack 文件平铺部署到 <code>Mods\\Custom_Assets\\Parts</code>（无嵌套文件夹）；ZIP 内夹带的 .dll 会解压到 <code>Mods</code> 根目录。</li><li><b>导入涂装包：</b>下载涂装包 ZIP（包内必须含 <code>textures</code> 文件夹，不区分大小写）→ 点「导入涂装包」→ 部署到 <code>Mods\\Custom_Assets\\Texture Packs</code>；缺少 textures 文件夹判定为无效并中止。</li><li><b>导入蓝图：</b>蓝图仅支持 ZIP（包内必须含 <code>Blueprints</code> 文件夹）→ 点「导入蓝图」→ 保留蓝图自身文件夹解压到 <code>Saving\\Blueprints</code>，不拍平、不多层嵌套。</li><li><b>DLL 模组：</b>ZIP 内的 .dll 文件统一部署到 <code>Mods</code> 根目录。</li><li><b>从右侧模组商店下载：</b>下载的 ZIP 将列入「待导入」，确认类型后点击「导入」。</li>',
   'mods.scanInstalled': '扫描已装模组',
   'mods.openDir': '打开游戏目录',
   'mods.dedup': '清理重复模组',
@@ -283,6 +285,8 @@ I18NRegister('zh', {
   // ===== 汉化弹窗 =====
   'han.title': '注入汉化',
   'han.dir': '游戏目录',
+  'han.body1': '<b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\\Custom Translations</code>，并把语言切到该词表。只多一个 txt，删掉即恢复英文。',
+  'han.body2': '<b>DLL 汉化</b>：游戏运行时注入进程，把模组里的中英文统一成中文字体。不改 <code>Mods</code> 目录，不落盘。',
   'han.warn': '两个开关都在注入器界面里，由它自己控制，启动器不代管。注入属于进程注入，部分杀软会拦截；被拦截时游戏仍是英文。',
   'han.src': '开源地址',
   'han.run': '打开注入器',

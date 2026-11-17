@@ -76,6 +76,7 @@ I18NRegister('en', {
   'games.added': 'Added Instances',
   'games.noAdded': 'No instances',
   'games.scanning': 'Scanning Steam libraries…',
+  'games.selectInstance': 'Select an instance…',
   'games.scanDone': 'Steam folder: {path}, {n} games found',
   'games.scanDoneCustom': 'Using {path}, {n} games found',
 
@@ -100,6 +101,7 @@ I18NRegister('en', {
   'mods.importSolar': 'Import Solar Pack',
   'mods.openStore': 'Open Mod Store',
   'mods.tutorial': 'Guide',
+  'tutorial.body': '<li><b>Add the game:</b> open Library → Scan Steam library, then Add once SFS appears. If Steam sits somewhere unusual, use Select Steam folder first.</li><li><b>Launch:</b> back on Home, hit Start on the SFS card. With Steam installed it goes through the Steam protocol.</li><li><b>Parts (.pack):</b> download a parts ZIP from the store → Import .pack parts → pick the ZIP or .pack. The .pack files are deployed flat into <code>Mods\\Custom_Assets\\Parts</code>; any bundled .dll lands in the <code>Mods</code> root.</li><li><b>Texture packs:</b> the ZIP must contain a <code>textures</code> folder (case-insensitive) → Import texture pack → deploys to <code>Mods\\Custom_Assets\\Texture Packs</code>. A missing textures folder aborts the import.</li><li><b>Blueprints:</b> ZIP only, must contain a <code>Blueprints</code> folder → Import blueprints → the folder keeps its own structure under <code>Saving\\Blueprints</code>, no flattening.</li><li><b>DLL mods:</b> .dll files inside the ZIP go to the <code>Mods</code> root.</li><li><b>From the store panel:</b> downloaded ZIPs show up in Pending — confirm the type, then Import.</li>',
   'mods.scanInstalled': 'Scan Installed Mods',
   'mods.openDir': 'Open Game Folder',
   'mods.dedup': 'Clean Duplicate Mods',
@@ -283,6 +285,8 @@ I18NRegister('en', {
   // ===== Localization dialog =====
   'han.title': 'Inject Chinese Localization',
   'han.dir': 'Game folder',
+  'han.body1': '<b>Game text:</b> writes the community Chinese word list into <code>Spaceflight Simulator_Data\\Custom Translations</code> and switches the game language to it. It adds one txt file — delete it to go back to English.',
+  'han.body2': '<b>DLL translation:</b> injects into the running game and renders mod text with a Chinese font. It does not touch the <code>Mods</code> folder and writes nothing to disk.',
   'han.warn': 'Both switches live in the injector UI and are controlled there; the launcher does not manage them. Injection is process-level, so some antivirus tools block it — when blocked, the game stays in English.',
   'han.src': 'Source',
   'han.run': 'Open injector',
