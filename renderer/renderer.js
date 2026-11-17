@@ -297,10 +297,54 @@ function scheduleHeavyRenders() {
   ]);
 }
 
+// ---- 多语言：左下角切换 + 切换后重绘动态列表 ----
+function initLangSwitch() {
+  const btn = $('#lang-btn');
+  const menu = $('#lang-menu');
+  const cur = $('#lang-current');
+  if (!btn || !menu) return;
+  const sync = (lang) => {
+    if (cur) cur.textContent = (window.LangLabel && LangLabel[lang]) || lang;
+    $$('#lang-menu .lang-option').forEach(o => o.classList.toggle('active', o.dataset.lang === lang));
+  };
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+  });
+  $$('#lang-menu .lang-option').forEach(o => {
+    o.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.hidden = true;
+      if (o.dataset.lang && o.dataset.lang !== I18NGetLang()) setAppLang(o.dataset.lang);
+    });
+  });
+  document.addEventListener('click', () => { if (!menu.hidden) menu.hidden = true; });
+  window.addEventListener('blur', () => { if (!menu.hidden) menu.hidden = true; });
+  sync(I18NGetLang());
+  I18NOnChange(sync);
+}
+
+function setAppLang(lang) {
+  if (!I18NSetLang(lang)) return;
+  state.cfg.lang = lang;
+  try { window.launcher.configSave(state.cfg); } catch (e) {}
+  // 动态内容为拼接文案，切换后重跑一次渲染
+  try { renderGames(); } catch (e) {}
+  try { renderMods(); } catch (e) {}
+  try { renderBackups(); } catch (e) {}
+  try { renderBlueprintTree(); } catch (e) {}
+  try { renderDownloads(); } catch (e) {}
+  try { loadWorldStats(); } catch (e) {}
+  try { if ($('#view-modstore') && $('#view-modstore').classList.contains('active')) loadModstore(); } catch (e) {}
+  try { if (window.__lpSync) window.__lpSync(); } catch (e) {}
+}
+
 // ---- 配置加载 ----
 async function init() {
   try { window.__bt && window.__bt('init_start'); } catch (e) {}
   state.cfg = await window.launcher.configLoad();
+  // 语言：优先上次选择，首次默认中文
+  try { I18NSetLang(state.cfg.lang === 'en' ? 'en' : 'zh'); } catch (e) {}
   // 防御：确保关键字段存在，避免空值导致渲染中断
   if (!Array.isArray(state.cfg.instances)) state.cfg.instances = [];
   if (!state.cfg.mods || typeof state.cfg.mods !== 'object') state.cfg.mods = { pending: [], installed: [] };
@@ -473,6 +517,7 @@ async function init() {
   });
   try { window.__bt && window.__bt('renderer_ready'); } catch (e) {}
   // 首批内容已落地，通知主进程可以显示窗口（主进程另有 3 秒兜底，不会因为漏发卡住不弹窗）
+  try { initLangSwitch(); } catch (e) { console.warn('lang switch init failed:', e); }
   try { window.launcher.uiReady && window.launcher.uiReady(); } catch (e) {}
   console.log('RENDERER_READY');
 }
@@ -557,29 +602,30 @@ function renderGames() {
 
   const htmlOf = (inst, showRemove = true) => {
     const last = inst.lastPlayed ? new Date(inst.lastPlayed) : null;
-    const lastStr = last ? `${last.getMonth()+1}/${last.getDate()} ${String(last.getHours()).padStart(2,'0')}:${String(last.getMinutes()).padStart(2,'0')}` : '未游玩';
+    const lastStr = last ? `${last.getMonth()+1}/${last.getDate()} ${String(last.getHours()).padStart(2,'0')}:${String(last.getMinutes()).padStart(2,'0')}` : '';
+    const lastLabel = last ? t('home.lastPlayed', { time: lastStr }) : t('home.neverPlayed');
     return `
     <div class="game-card">
       <div class="game-icon"><img data-gid="${esc(inst.id)}" src="assets/game-icon.png" alt="SFS" style="width:100%;height:100%;object-fit:contain;border-radius:8px"></div>
       <div class="game-info">
         <div class="game-name">${esc(inst.name)}</div>
         <div class="game-path">${esc(inst.exePath || inst.installDir || '')}</div>
-        <div class="game-path" style="color:var(--accent)">最近游玩：${lastStr}</div>
+        <div class="game-path" style="color:var(--accent)">${lastLabel}</div>
       </div>
       <div class="game-actions">
-        <button class="btn small primary" data-act="launch" data-id="${esc(inst.id)}">启动</button>
-        ${showRemove ? `<button class="btn small danger" data-act="remove" data-id="${esc(inst.id)}">移除</button>` : ''}
+        <button class="btn small primary" data-act="launch" data-id="${esc(inst.id)}">${t('common.launch')}</button>
+        ${showRemove ? `<button class="btn small danger" data-act="remove" data-id="${esc(inst.id)}">${t('common.remove')}</button>` : ''}
       </div>
     </div>`;
   };
 
   list.innerHTML = insts.length
     ? insts.map(i => htmlOf(i, false)).join('')
-    : `<div class="empty-tip"><div>还没有游戏实例</div><div class="empty-sub">点击上方「自动检测 Steam」或「手动添加实例」</div></div>`;
+    : `<div class="empty-tip"><div>${t('home.noInstance')}</div><div class="empty-sub">${t('home.noInstanceSub')}</div></div>`;
 
   added.innerHTML = insts.length
     ? insts.map(i => htmlOf(i, true)).join('')
-    : `<div class="empty-tip"><div>暂无实例</div></div>`;
+    : `<div class="empty-tip"><div>${t('games.noAdded')}</div></div>`;
 
   // 游戏实例图标与游戏本体一致：渲染端缓存命中即渲染，未命中才走 IPC（主进程另有内存+磁盘缓存）
   $$('#home-game-list .game-icon img, #added-game-list .game-icon img').forEach(img => {
@@ -680,8 +726,8 @@ function renderGames() {
       else { window.launcher.gameIcon(cur.id).then(r => { if (r && r.success && r.dataUrl) { iconRenderCache.set(cur.id, r.dataUrl); heroIcon.src = r.dataUrl; } }).catch(() => {}); }
     }
   } else {
-    if (nameEl) nameEl.textContent = '未选择实例';
-    if (metaEl) metaEl.textContent = '扫描 Steam 库或手动添加游戏目录';
+    if (nameEl) nameEl.textContent = t('home.notSelected');
+    if (metaEl) metaEl.textContent = t('home.scanOrAdd');
     if (heroIcon) heroIcon.src = 'assets/game-icon.png';
   }
   // 开始游戏下拉：列出全部实例，点哪个就切换为当前实例（不启动游戏，启动由主按钮负责）
@@ -689,7 +735,7 @@ function renderGames() {
   if (dd) {
     dd.innerHTML = insts.map(i =>
       `<div class="sd-item${i.id === (cur && cur.id) ? ' active' : ''}" data-sd="${esc(i.id)}">${esc(i.name)}</div>`
-    ).join('') || '<div class="sd-item" style="opacity:.6">暂无实例</div>';
+    ).join('') || `<div class="sd-item" style="opacity:.6">${t('games.noAdded')}</div>`;
     dd.querySelectorAll('.sd-item').forEach(it => {
       it.addEventListener('click', async () => {
         const id = it.dataset.sd;

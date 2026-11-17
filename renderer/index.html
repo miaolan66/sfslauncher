@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
@@ -12,13 +12,13 @@
   <div class="titlebar">
     <div class="titlebar-left">
       <img class="logo" src="assets/app-icon.ico" alt="SFS启动器" />
-      <span class="title-text">SFS 启动器</span>
+      <span class="title-text" data-i18n="app.name">SFS 启动器</span>
       <span class="title-sub">Spaceflight Simulator Launcher</span>
     </div>
     <div class="titlebar-controls">
-      <button id="btn-min" title="最小化">&#x2013;</button>
-      <button id="btn-max" title="最大化">&#x25A1;</button>
-      <button id="btn-close" title="关闭">&#x2715;</button>
+      <button id="btn-min" title="最小化" data-i18n-title="win.minimize">&#x2013;</button>
+      <button id="btn-max" title="最大化" data-i18n-title="win.maximize">&#x25A1;</button>
+      <button id="btn-close" title="关闭" data-i18n-title="win.close">&#x2715;</button>
     </div>
   </div>
 
@@ -26,31 +26,44 @@
     <!-- 左侧导航 -->
     <aside class="sidebar">
       <div class="nav-item active" data-view="home">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span data-i18n="nav.home">首页</span>
       </div>
       <div class="nav-item" data-view="games">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM9 15.5V8.5l6.5 3.5L9 15.5z"/></svg><span>游戏库</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM9 15.5V8.5l6.5 3.5L9 15.5z"/></svg><span data-i18n="nav.games">游戏库</span>
       </div>
       <div class="nav-item" data-view="mods">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg><span>模组</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg><span data-i18n="nav.mods">模组</span>
       </div>
       <div class="nav-item" data-view="modstore">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>模组商店</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span data-i18n="nav.store">模组商店</span>
       </div>
       <div class="nav-item" data-view="downloads">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>下载队列</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span data-i18n="nav.downloads">下载队列</span>
       </div>
       <div class="nav-item" data-view="blueprint">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4zM13 5l-2 14h2L15 5h-2z"/></svg><span>蓝图</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4zM13 5l-2 14h2L15 5h-2z"/></svg><span data-i18n="nav.blueprint">蓝图</span>
       </div>
       <div class="nav-item" data-view="saves">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg><span>存档</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg><span data-i18n="nav.saves">存档</span>
       </div>
       <div class="nav-item" data-view="settings">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span>设置</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span data-i18n="nav.settings">设置</span>
       </div>
       <div class="nav-item" data-view="about">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>关于</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="nav.about">关于</span>
+      </div>
+
+      <!-- 语言切换：左下角，点击展开语言列表 -->
+      <div class="lang-switch" id="lang-switch">
+        <div class="lang-menu" id="lang-menu" hidden>
+          <div class="lang-option" data-lang="zh">中文</div>
+          <div class="lang-option" data-lang="en">English</div>
+        </div>
+        <button class="lang-btn" id="lang-btn" data-i18n-title="lang.switch">
+          <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z"/></svg>
+          <span id="lang-current">中文</span>
+          <span class="lang-caret">▾</span>
+        </button>
       </div>
     </aside>
 
@@ -61,7 +74,7 @@
       <section class="view active" id="view-home">
         <div class="home-wrap">
           <!-- 实例大卡片：背景右键可换图，默认 SFS 图标 -->
-          <div class="instance-hero" id="instance-hero" title="右键自定义背景图">
+          <div class="instance-hero" id="instance-hero" title="右键自定义背景图" data-i18n-title="home.heroBgTitle">
             <div class="instance-hero-bg" id="instance-hero-bg"></div>
             <div class="instance-hero-info">
               <img class="instance-hero-icon" id="instance-hero-icon" src="assets/game-icon.png" alt="game">
@@ -70,7 +83,7 @@
             </div>
             <div class="instance-hero-actions">
               <button class="btn primary big" id="btn-start-game">
-                开始游戏
+                <span data-i18n="home.startGame">开始游戏</span>
                 <span class="start-caret" id="start-caret">▾</span>
               </button>
               <div class="start-dropdown" id="start-dropdown" hidden></div>
@@ -79,33 +92,33 @@
 
           <!-- 操作行 -->
           <div class="home-actions">
-            <button class="btn primary" id="btn-home-add">+ 添加游戏实例</button>
-            <button class="btn ghost" id="btn-home-scan">自动检测 Steam</button>
+            <button class="btn primary" id="btn-home-add" data-i18n="home.addInstance">+ 添加游戏实例</button>
+            <button class="btn ghost" id="btn-home-scan" data-i18n="home.scanSteam">自动检测 Steam</button>
           </div>
 
           <!-- 世界数据栏：挑战进度 + 游玩时间 -->
           <div class="home-stats-bar">
             <button class="stat-btn" id="btn-challenges">
               <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
-              <span class="stat-label">挑战进度</span>
+              <span class="stat-label" data-i18n="home.challenges">挑战进度</span>
               <span class="stat-value" id="stat-challenges">—</span>
             </button>
             <button class="stat-btn" id="btn-playtime">
               <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              <span class="stat-label">游玩时间</span>
+              <span class="stat-label" data-i18n="home.playtime">游玩时间</span>
               <span class="stat-value" id="stat-playtime">—</span>
             </button>
           </div>
 
           <!-- 最近实例列表 -->
           <div class="section-title-row">
-            <h2>我的游戏</h2>
-            <button class="btn small ghost" id="btn-manage-instances">切换实例</button>
+            <h2 data-i18n="home.myGames">我的游戏</h2>
+            <button class="btn small ghost" id="btn-manage-instances" data-i18n="home.switchInstance">切换实例</button>
           </div>
           <div class="game-list" id="home-game-list">
             <div class="empty-tip">
-              <div>尚未添加游戏实例</div>
-              <div class="empty-sub">可扫描 Steam 库自动识别，或手动指定游戏目录</div>
+              <div data-i18n="home.emptyTitle">尚未添加游戏实例</div>
+              <div class="empty-sub" data-i18n="home.emptySub">可扫描 Steam 库自动识别，或手动指定游戏目录</div>
             </div>
           </div>
         </div>
@@ -113,110 +126,110 @@
 
       <!-- ===== 游戏库 ===== -->
       <section class="view" id="view-games">
-        <h2 class="page-title">游戏库</h2>
+        <h2 class="page-title" data-i18n="games.title">游戏库</h2>
         <div class="panel">
           <div class="panel-row">
             <div>
-              <div class="panel-label">Steam 库扫描</div>
-              <div class="panel-desc" id="scan-status">扫描本机所有 Steam 库并识别其中的 SFS</div>
+              <div class="panel-label" data-i18n="games.steamScan">Steam 库扫描</div>
+              <div class="panel-desc" id="scan-status" data-i18n="games.scanDesc">扫描本机所有 Steam 库并识别其中的 SFS</div>
             </div>
             <div class="panel-actions">
-              <button class="btn ghost" id="btn-scan">扫描 Steam 库</button>
-              <button class="btn ghost" id="btn-steamdir">选择 Steam 目录</button>
+              <button class="btn ghost" id="btn-scan" data-i18n="games.scanBtn">扫描 Steam 库</button>
+              <button class="btn ghost" id="btn-steamdir" data-i18n="games.selectDir">选择 Steam 目录</button>
             </div>
           </div>
         </div>
 
         <div id="scan-result" hidden>
-          <div class="section-title-row"><h3>检测结果</h3></div>
+          <div class="section-title-row"><h3 data-i18n="games.result">检测结果</h3></div>
           <div class="game-list" id="scan-game-list"></div>
         </div>
 
-        <div class="section-title-row"><h3>已添加实例</h3></div>
+        <div class="section-title-row"><h3 data-i18n="games.added">已添加实例</h3></div>
         <div class="game-list" id="added-game-list"></div>
       </section>
 
       <!-- ===== 模组 ===== -->
       <section class="view" id="view-mods">
         <div class="section-title-row">
-          <h2 class="page-title" style="margin:0">模组管理</h2>
-          <select id="mod-inst-select" class="inst-select" title="选择要管理的游戏实例">
+          <h2 class="page-title" style="margin:0" data-i18n="mods.title">模组管理</h2>
+          <select id="mod-inst-select" class="inst-select" title="选择要管理的游戏实例" data-i18n-title="mods.selectTitle">
             <option value="">选择实例…</option>
           </select>
         </div>
 
         <div class="mod-overview" id="mod-overview">
-          <div class="ov-item"><span class="ov-num" data-ov="parts">0</span><span class="ov-label">部件</span></div>
+          <div class="ov-item"><span class="ov-num" data-ov="parts">0</span><span class="ov-label" data-i18n="mods.parts">部件</span></div>
           <div class="ov-item"><span class="ov-num" data-ov="dll">0</span><span class="ov-label">DLL</span></div>
-          <div class="ov-item"><span class="ov-num" data-ov="blueprint">0</span><span class="ov-label">蓝图</span></div>
-          <div class="ov-item"><span class="ov-num" data-ov="texture">0</span><span class="ov-label">涂装</span></div>
-          <div class="ov-item"><span class="ov-num" data-ov="solar">0</span><span class="ov-label">扩展包</span></div>
+          <div class="ov-item"><span class="ov-num" data-ov="blueprint">0</span><span class="ov-label" data-i18n="mods.blueprint">蓝图</span></div>
+          <div class="ov-item"><span class="ov-num" data-ov="texture">0</span><span class="ov-label" data-i18n="mods.texture">涂装</span></div>
+          <div class="ov-item"><span class="ov-num" data-ov="solar">0</span><span class="ov-label" data-i18n="mods.solar">扩展包</span></div>
         </div>
 
         <div class="panel">
-          <div class="panel-label">一键导入模组</div>
+          <div class="panel-label" data-i18n="mods.importTitle">一键导入模组</div>
           <div class="mod-buttons">
-            <button class="btn primary" data-modbtn="parts">导入部件 .pack</button>
-            <button class="btn primary" data-modbtn="texture">导入涂装包</button>
-            <button class="btn primary" data-modbtn="blueprint">导入蓝图</button>
-            <button class="btn primary" id="btn-mod-solar">导入扩展包</button>
-            <button class="btn ghost" id="btn-modsite">打开模组商店</button>
-            <button class="btn ghost" id="btn-tutorial">使用教程</button>
-            <button class="btn ghost" id="btn-scan-installed">扫描已装模组</button>
-            <button class="btn ghost" id="btn-opendata">打开游戏目录</button>
-            <button class="btn ghost" id="btn-dedup">清理重复模组</button>
-            <button class="btn ghost" id="btn-import-history">导入历史</button>
-            <button class="btn ghost" id="btn-export-list">导出清单</button>
+            <button class="btn primary" data-modbtn="parts" data-i18n="mods.importParts">导入部件 .pack</button>
+            <button class="btn primary" data-modbtn="texture" data-i18n="mods.importTexture">导入涂装包</button>
+            <button class="btn primary" data-modbtn="blueprint" data-i18n="mods.importBlueprint">导入蓝图</button>
+            <button class="btn primary" id="btn-mod-solar" data-i18n="mods.importSolar">导入扩展包</button>
+            <button class="btn ghost" id="btn-modsite" data-i18n="mods.openStore">打开模组商店</button>
+            <button class="btn ghost" id="btn-tutorial" data-i18n="mods.tutorial">使用教程</button>
+            <button class="btn ghost" id="btn-scan-installed" data-i18n="mods.scanInstalled">扫描已装模组</button>
+            <button class="btn ghost" id="btn-opendata" data-i18n="mods.openDir">打开游戏目录</button>
+            <button class="btn ghost" id="btn-dedup" data-i18n="mods.dedup">清理重复模组</button>
+            <button class="btn ghost" id="btn-import-history" data-i18n="mods.historyBtn">导入历史</button>
+            <button class="btn ghost" id="btn-export-list" data-i18n="mods.exportList">导出清单</button>
           </div>
         </div>
 
         <div id="hist-sec" class="collapsed">
           <div class="section-title-row" id="hist-sec-title">
-            <h3>导入历史</h3>
+            <h3 data-i18n="mods.history">导入历史</h3>
             <span class="bp-caret"></span>
-            <button class="btn small ghost" id="btn-import-history-clear">清空</button>
+            <button class="btn small ghost" id="btn-import-history-clear" data-i18n="mods.clear">清空</button>
           </div>
           <div class="hist-collapse"><div class="hist-collapse-inner">
             <div class="mod-list" id="import-history-list">
               <div class="empty-tip">
-                <div>暂无导入记录</div>
+                <div data-i18n="mods.noHistory">暂无导入记录</div>
               </div>
             </div>
           </div></div>
         </div>
 
         <div class="section-title-row">
-          <h3>待导入</h3>
-          <button class="btn small ghost" id="btn-open-playerlog">查看游戏日志</button>
+          <h3 data-i18n="mods.pending">待导入</h3>
+          <button class="btn small ghost" id="btn-open-playerlog" data-i18n="mods.viewLog">查看游戏日志</button>
         </div>
         <div class="mod-list" id="pending-list">
           <div class="empty-tip">
-            <div>暂无待导入文件</div>
-            <div class="empty-sub">在模组商店下载的 ZIP 会列入此处，确认类型后点击「导入」部署</div>
+            <div data-i18n="mods.noPending">暂无待导入文件</div>
+            <div class="empty-sub" data-i18n="mods.noPendingSub">在模组商店下载的 ZIP 会列入此处，确认类型后点击「导入」部署</div>
           </div>
         </div>
 
         <div class="section-title-row">
-          <h3>已安装模组</h3>
+          <h3 data-i18n="mods.installed">已安装模组</h3>
           <div class="segment-capsule" id="mod-type-capsule">
             <div class="seg-slider"></div>
-            <div class="seg-option active" data-value="all">全部</div>
-            <div class="seg-option" data-value="parts">部件</div>
+            <div class="seg-option active" data-value="all" data-i18n="common.all">全部</div>
+            <div class="seg-option" data-value="parts" data-i18n="mods.parts">部件</div>
             <div class="seg-option" data-value="dll">DLL</div>
-            <div class="seg-option" data-value="blueprint">蓝图</div>
-            <div class="seg-option" data-value="texture">涂装</div>
-            <div class="seg-option" data-value="solar">扩展包</div>
+            <div class="seg-option" data-value="blueprint" data-i18n="mods.blueprint">蓝图</div>
+            <div class="seg-option" data-value="texture" data-i18n="mods.texture">涂装</div>
+            <div class="seg-option" data-value="solar" data-i18n="mods.solar">扩展包</div>
           </div>
           <div id="mod-batch-bar" class="mod-batch-bar" hidden>
             <span id="mod-batch-count">已选 0 项</span>
-            <button class="btn small ghost" id="btn-mod-batch-export">批量导出</button>
-            <button class="btn small danger" id="btn-mod-batch-del">批量删除</button>
+            <button class="btn small ghost" id="btn-mod-batch-export" data-i18n="mods.batchExport">批量导出</button>
+            <button class="btn small danger" id="btn-mod-batch-del" data-i18n="mods.batchDelete">批量删除</button>
           </div>
         </div>
         <div class="mod-list" id="installed-list">
           <div class="empty-tip">
-            <div>尚未安装模组</div>
-            <div class="empty-sub">通过上方按钮导入本地文件，或在模组商店下载后导入</div>
+            <div data-i18n="mods.noInstalled">尚未安装模组</div>
+            <div class="empty-sub" data-i18n="mods.noInstalledSub">通过上方按钮导入本地文件，或在模组商店下载后导入</div>
           </div>
         </div>
       </section>
@@ -226,12 +239,12 @@
         <!-- 顶部下载进度面板 -->
         <div class="dl-progress-panel" id="dl-progress-panel">
           <div class="dl-progress-header" id="dl-progress-header">
-            <span>下载进度</span>
+            <span data-i18n="store.downloadProgress">下载进度</span>
             <span class="dl-toggle" id="dl-toggle">展开 ▾</span>
           </div>
           <div class="dl-progress-body" id="dl-progress-body" hidden>
             <div id="dl-progress-list">
-              <div class="empty-tip" style="padding:12px 0;">暂无下载任务</div>
+              <div class="empty-tip" style="padding:12px 0;" data-i18n="store.noTask">暂无下载任务</div>
             </div>
             <div class="dl-more-tip" id="dl-more-tip" hidden>
               <a href="javascript:void(0)" id="dl-more-link">还有 N 项任务，前往下载队列查看全部 ›</a>
@@ -240,42 +253,42 @@
         </div>
 
         <div class="section-title-row">
-          <h2>模组商店</h2>
-          <button class="btn small ghost" id="btn-modstore-refresh">刷新</button>
+          <h2 data-i18n="store.title">模组商店</h2>
+          <button class="btn small ghost" id="btn-modstore-refresh" data-i18n="common.refresh">刷新</button>
         </div>
 
         <!-- 分类胶囊 + 搜索框 -->
         <div class="modstore-toolbar">
           <div class="segment-capsule" id="mod-cat-capsule">
             <div class="seg-slider"></div>
-            <div class="seg-option active" data-value="all">全部</div>
-            <div class="seg-option" data-value="parts">功能部件</div>
-            <div class="seg-option" data-value="engine">引擎</div>
-            <div class="seg-option" data-value="entertainment">娱乐</div>
-            <div class="seg-option" data-value="skin">涂装</div>
+            <div class="seg-option active" data-value="all" data-i18n="common.all">全部</div>
+            <div class="seg-option" data-value="parts" data-i18n="store.catParts">功能部件</div>
+            <div class="seg-option" data-value="engine" data-i18n="store.catEngine">引擎</div>
+            <div class="seg-option" data-value="entertainment" data-i18n="store.catFun">娱乐</div>
+            <div class="seg-option" data-value="skin" data-i18n="store.catSkin">涂装</div>
             <div class="seg-option" data-value="dll">DLL</div>
           </div>
-          <input type="text" id="mod-search" class="mod-search-input" placeholder="搜索模组名称、作者、标签…" />
+          <input type="text" id="mod-search" class="mod-search-input" placeholder="搜索模组名称、作者、标签…" data-i18n-ph="store.searchPh" />
         </div>
 
         <div id="modstore-grid" class="modstore-grid">
-          <div class="empty-tip" id="modstore-loading">正在加载模组列表…</div>
+          <div class="empty-tip" id="modstore-loading" data-i18n="store.loading">正在加载模组列表…</div>
         </div>
       </section>
 
       <!-- ===== 下载队列 ===== -->
       <section class="view" id="view-downloads">
         <div class="section-title-row">
-          <h2>下载队列</h2>
+          <h2 data-i18n="dl.title">下载队列</h2>
           <div style="display:flex;gap:8px">
-            <button class="btn small ghost" id="btn-dl-refresh">刷新</button>
-            <button class="btn small ghost" id="btn-dl-clear">清除已完成</button>
+            <button class="btn small ghost" id="btn-dl-refresh" data-i18n="common.refresh">刷新</button>
+            <button class="btn small ghost" id="btn-dl-clear" data-i18n="dl.clearDone">清除已完成</button>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-desc">显示下载任务及进度，可取消进行中的任务；完成后请到「模组」页导入。</div>
+          <div class="panel-desc" data-i18n="dl.desc">显示下载任务及进度，可取消进行中的任务；完成后请到「模组」页导入。</div>
           <div id="download-list" style="margin-top:12px">
-            <div class="empty-tip"><div>暂无下载任务</div></div>
+            <div class="empty-tip"><div data-i18n="dl.emptyTitle">暂无下载任务</div></div>
           </div>
         </div>
       </section>
@@ -283,21 +296,21 @@
       <!-- ===== 蓝图（独立导航页，只扫文件夹、可展开，操作权限与模组一致） ===== -->
       <section class="view" id="view-blueprint">
         <div class="section-title-row">
-          <h2 class="page-title" style="margin:0">蓝图文件夹</h2>
+          <h2 class="page-title" style="margin:0" data-i18n="bp.title">蓝图文件夹</h2>
           <div style="display:flex;gap:8px;align-items:center">
-            <select id="bp-inst-select" class="inst-select" title="选择要查看的游戏实例">
+            <select id="bp-inst-select" class="inst-select" title="选择要查看的游戏实例" data-i18n-title="bp.selectTitle">
               <option value="">选择实例…</option>
             </select>
-            <button class="btn small primary" id="btn-bp-import">导入蓝图</button>
-            <button class="btn small ghost" id="btn-bp-refresh">刷新</button>
+            <button class="btn small primary" id="btn-bp-import" data-i18n="bp.import">导入蓝图</button>
+            <button class="btn small ghost" id="btn-bp-refresh" data-i18n="common.refresh">刷新</button>
           </div>
         </div>
         <div class="panel bp-panel">
-          <div class="panel-desc">列出 Saving\Blueprints 下的文件夹，点击条目可展开查看蓝图文件</div>
+          <div class="panel-desc" data-i18n="bp.desc">列出 Saving\Blueprints 下的文件夹，点击条目可展开查看蓝图文件</div>
           <div style="display:flex;gap:16px;">
             <div style="flex:1;min-width:0;">
               <div class="bp-tree" id="blueprint-tree">
-                <div class="empty-tip"><div>正在扫描蓝图文件夹…</div></div>
+                <div class="empty-tip"><div data-i18n="bp.scanning">正在扫描蓝图文件夹…</div></div>
               </div>
             </div>
           </div>
@@ -306,16 +319,16 @@
 
       <!-- ===== 存档 ===== -->
       <section class="view" id="view-saves">
-        <h2 class="page-title">存档备份</h2>
+        <h2 class="page-title" data-i18n="saves.title">存档备份</h2>
 
-        <div class="section-title-row"><h3>整体压缩备份</h3></div>
+        <div class="section-title-row"><h3 data-i18n="saves.zipTitle">整体压缩备份</h3></div>
         <div class="panel">
           <div class="panel-row">
             <div>
-              <div class="panel-label">备份游戏目录</div>
-              <div class="panel-desc">将整个游戏目录打包为单个 ZIP，可恢复到游戏目录或自选目录</div>
+              <div class="panel-label" data-i18n="saves.backupDir">备份游戏目录</div>
+              <div class="panel-desc" data-i18n="saves.backupDesc">将整个游戏目录打包为单个 ZIP，可恢复到游戏目录或自选目录</div>
             </div>
-            <button class="btn primary" id="btn-backup-create">创建备份</button>
+            <button class="btn primary" id="btn-backup-create" data-i18n="saves.create">创建备份</button>
           </div>
           <div id="backup-list" style="margin-top:12px"></div>
         </div>
@@ -323,23 +336,23 @@
 
       <!-- ===== 设置 ===== -->
       <section class="view" id="view-settings">
-        <h2 class="page-title">设置</h2>
+        <h2 class="page-title" data-i18n="settings.title">设置</h2>
 
         <div class="seg-btn-group settings-nav" id="settings-nav">
-          <button type="button" class="seg-btn" data-cat="all">全部</button>
-          <button type="button" class="seg-btn" data-cat="general">通用</button>
-          <button type="button" class="seg-btn" data-cat="appearance">外观</button>
-          <button type="button" class="seg-btn" data-cat="download">下载</button>
-          <button type="button" class="seg-btn" data-cat="backup">备份</button>
-          <button type="button" class="seg-btn" data-cat="other">其他</button>
+          <button type="button" class="seg-btn" data-cat="all" data-i18n="settings.catAll">全部</button>
+          <button type="button" class="seg-btn" data-cat="general" data-i18n="settings.catGeneral">通用</button>
+          <button type="button" class="seg-btn" data-cat="appearance" data-i18n="settings.catAppearance">外观</button>
+          <button type="button" class="seg-btn" data-cat="download" data-i18n="settings.catDownload">下载</button>
+          <button type="button" class="seg-btn" data-cat="backup" data-i18n="settings.catBackup">备份</button>
+          <button type="button" class="seg-btn" data-cat="other" data-i18n="settings.catOther">其他</button>
         </div>
 
-        <div class="settings-group-title" data-cat="general">通用</div>
+        <div class="settings-group-title" data-cat="general" data-i18n="settings.groupGeneral">通用</div>
         <div class="panel" data-cat="general">
           <div class="panel-row">
             <div>
-              <div class="panel-label">启动游戏后隐藏到托盘</div>
-              <div class="panel-desc">只对启动器里点「开始游戏」生效：启动后启动器收起到系统托盘，游戏退出后自动恢复显示（默认关闭）</div>
+              <div class="panel-label" data-i18n="settings.hideToTray">启动游戏后隐藏到托盘</div>
+              <div class="panel-desc" data-i18n="settings.hideToTrayDesc">只对启动器里点「开始游戏」生效：启动后启动器收起到系统托盘，游戏退出后自动恢复显示（默认关闭）</div>
             </div>
             <label class="switch"><input type="checkbox" id="autoshow-toggle" /><span class="slider"></span></label>
           </div>
@@ -348,13 +361,13 @@
         <div class="panel" data-cat="general">
           <div class="panel-row">
             <div>
-              <div class="panel-label">点击窗口关闭按钮时</div>
-              <div class="panel-desc">选择右上角关闭按钮的行为；选「每次询问」时可在弹窗中临时决定并勾选记住</div>
+              <div class="panel-label" data-i18n="settings.closeAction">点击窗口关闭按钮时</div>
+              <div class="panel-desc" data-i18n="settings.closeActionDesc">选择右上角关闭按钮的行为；选「每次询问」时可在弹窗中临时决定并勾选记住</div>
             </div>
             <select id="close-action-select" style="background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;">
-              <option value="ask">每次询问</option>
-              <option value="tray">最小化到托盘</option>
-              <option value="quit">直接退出</option>
+              <option value="ask" data-i18n="settings.closeAsk">每次询问</option>
+              <option value="tray" data-i18n="settings.closeTray">最小化到托盘</option>
+              <option value="quit" data-i18n="settings.closeQuit">直接退出</option>
             </select>
           </div>
         </div>
@@ -362,8 +375,8 @@
         <div class="panel" data-cat="general">
           <div class="panel-row">
             <div>
-              <div class="panel-label">手动打开游戏时唤起启动器</div>
-              <div class="panel-desc">开启后写入开机自启，并在后台检查 SFS 进程：手动启动游戏时把启动器唤到前台，窗口已在显示时不再重复弹出。关闭则同时取消开机自启。</div>
+              <div class="panel-label" data-i18n="settings.wakeLauncher">手动打开游戏时唤起启动器</div>
+              <div class="panel-desc" data-i18n="settings.wakeDesc">开启后写入开机自启，并在后台检查 SFS 进程：手动启动游戏时把启动器唤到前台，窗口已在显示时不再重复弹出。关闭则同时取消开机自启。</div>
             </div>
             <label class="switch"><input type="checkbox" id="autogame-toggle" checked /><span class="slider"></span></label>
           </div>
@@ -372,25 +385,25 @@
         <div class="panel" data-cat="general">
           <div class="panel-row">
             <div>
-              <div class="panel-label">新手引导</div>
-              <div class="panel-desc">分步介绍各页面用途和常用操作，首次启动会自动播放</div>
+              <div class="panel-label" data-i18n="settings.onboarding">新手引导</div>
+              <div class="panel-desc" data-i18n="settings.onboardingDesc">分步介绍各页面用途和常用操作，首次启动会自动播放</div>
             </div>
-            <button class="btn small ghost" id="btn-onboarding-replay">重看引导</button>
+            <button class="btn small ghost" id="btn-onboarding-replay" data-i18n="settings.replayOnboarding">重看引导</button>
           </div>
         </div>
 
-        <div class="settings-group-title" data-cat="appearance">外观</div>
+        <div class="settings-group-title" data-cat="appearance" data-i18n="settings.groupAppearance">外观</div>
         <div class="panel" data-cat="appearance">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:10px;">
             <div>
-              <div class="panel-label">外观主题</div>
-              <div class="panel-desc">深色、浅色或跟随系统；毛玻璃效果可单独设置</div>
+              <div class="panel-label" data-i18n="settings.theme">外观主题</div>
+              <div class="panel-desc" data-i18n="settings.themeDesc">深色、浅色或跟随系统；毛玻璃效果可单独设置</div>
             </div>
             <div class="segment-capsule" id="theme-capsule">
               <div class="seg-slider"></div>
-              <div class="seg-option" data-value="dark">深色</div>
-              <div class="seg-option" data-value="light">浅色</div>
-              <div class="seg-option" data-value="system">跟随系统</div>
+              <div class="seg-option" data-value="dark" data-i18n="settings.themeDark">深色</div>
+              <div class="seg-option" data-value="light" data-i18n="settings.themeLight">浅色</div>
+              <div class="seg-option" data-value="system" data-i18n="settings.themeSystem">跟随系统</div>
             </div>
           </div>
         </div>
@@ -398,16 +411,16 @@
         <div class="panel" data-cat="appearance">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:10px;">
             <div>
-              <div class="panel-label">毛玻璃效果</div>
-              <div class="panel-desc">关闭后改用纯色背景；不同材质对系统版本有要求</div>
+              <div class="panel-label" data-i18n="settings.glass">毛玻璃效果</div>
+              <div class="panel-desc" data-i18n="settings.glassDesc">关闭后改用纯色背景；不同材质对系统版本有要求</div>
             </div>
             <div class="segment-capsule" id="glass-capsule">
               <div class="seg-slider"></div>
-              <div class="seg-option" data-value="off">关闭</div>
+              <div class="seg-option" data-value="off" data-i18n="settings.glassOff">关闭</div>
               <div class="seg-option" data-value="aero">Aero</div>
-              <div class="seg-option" data-value="acrylic">亚克力</div>
-              <div class="seg-option" data-value="mica">云母</div>
-              <div class="seg-option" data-value="liuli">琉璃</div>
+              <div class="seg-option" data-value="acrylic" data-i18n="settings.glassAcrylic">亚克力</div>
+              <div class="seg-option" data-value="mica" data-i18n="settings.glassMica">云母</div>
+              <div class="seg-option" data-value="liuli" data-i18n="settings.glassLiuli">琉璃</div>
             </div>
           </div>
         </div>
@@ -415,32 +428,32 @@
         <div class="panel" id="liuli-params-panel" data-cat="appearance">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:12px;">
             <div>
-              <div class="panel-label">琉璃材质参数</div>
-              <div class="panel-desc">仅「琉璃」档生效，拖动立即应用并保存；透过头了看不清字时点恢复默认</div>
+              <div class="panel-label" data-i18n="settings.liuliParams">琉璃材质参数</div>
+              <div class="panel-desc" data-i18n="settings.liuliDesc">仅「琉璃」档生效，拖动立即应用并保存；透过头了看不清字时点恢复默认</div>
             </div>
             <div class="lp-row">
-              <span>内容通透度</span>
+              <span data-i18n="settings.opacity">内容通透度</span>
               <input type="range" id="lp-opacity" min="20" max="90" step="1" />
               <span class="lp-val" id="lp-opacity-val">50%</span>
             </div>
             <div class="lp-row">
-              <span>壁纸遮罩</span>
+              <span data-i18n="settings.veil">壁纸遮罩</span>
               <input type="range" id="lp-veil" min="0" max="80" step="1" />
               <span class="lp-val" id="lp-veil-val">自动</span>
             </div>
             <div class="lp-row">
-              <span>壁纸模糊</span>
+              <span data-i18n="settings.blur">壁纸模糊</span>
               <input type="range" id="lp-blur" min="0" max="24" step="1" />
               <span class="lp-val" id="lp-blur-val">10px</span>
             </div>
             <div class="lp-row">
-              <span>泛光强度</span>
+              <span data-i18n="settings.glow">泛光强度</span>
               <input type="range" id="lp-glow" min="0" max="50" step="1" />
               <span class="lp-val" id="lp-glow-val">15%</span>
             </div>
             <div class="wp-row">
-              <button type="button" class="liuli-btn liuli-btn--ghost" id="lp-reset-btn">恢复默认</button>
-              <button type="button" class="liuli-btn liuli-btn--ghost" id="lp-veil-auto-btn">遮罩随主题</button>
+              <button type="button" class="liuli-btn liuli-btn--ghost" id="lp-reset-btn" data-i18n="settings.resetDefault">恢复默认</button>
+              <button type="button" class="liuli-btn liuli-btn--ghost" id="lp-veil-auto-btn" data-i18n="settings.veilFollowTheme">遮罩随主题</button>
             </div>
           </div>
         </div>
@@ -448,8 +461,8 @@
         <div class="panel" data-cat="appearance">
           <div class="panel-row">
             <div>
-              <div class="panel-label">毛玻璃下高级过渡动画</div>
-              <div class="panel-desc">仅在毛玻璃开启时生效：默认关闭，使用轻量淡入更流畅；开启后恢复完整页面过渡动画，配置较低的机器可能掉帧</div>
+              <div class="panel-label" data-i18n="settings.heavyAnim">毛玻璃下高级过渡动画</div>
+              <div class="panel-desc" data-i18n="settings.heavyAnimDesc">仅在毛玻璃开启时生效：默认关闭，使用轻量淡入更流畅；开启后恢复完整页面过渡动画，配置较低的机器可能掉帧</div>
             </div>
             <label class="switch"><input type="checkbox" id="glass-heavy-toggle" /><span class="slider"></span></label>
           </div>
@@ -458,27 +471,27 @@
         <div class="panel" id="wallpaper-panel" data-cat="appearance">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:10px;">
             <div>
-              <div class="panel-label">主题背景壁纸</div>
-              <div class="panel-desc">选择本地图片铺在界面底层；未选时沿用当前材质底色</div>
+              <div class="panel-label" data-i18n="settings.wallpaper">主题背景壁纸</div>
+              <div class="panel-desc" data-i18n="settings.wallpaperDesc">选择本地图片铺在界面底层；未选时沿用当前材质底色</div>
             </div>
             <div class="wp-row">
-              <button type="button" class="liuli-btn liuli-btn--ghost" id="wp-pick-btn">选择图片</button>
-              <button type="button" class="liuli-btn liuli-btn--ghost" id="wp-clear-btn">移除壁纸</button>
-              <span class="wp-file-name" id="wp-file-name">未设置</span>
+              <button type="button" class="liuli-btn liuli-btn--ghost" id="wp-pick-btn" data-i18n="settings.pickImage">选择图片</button>
+              <button type="button" class="liuli-btn liuli-btn--ghost" id="wp-clear-btn" data-i18n="settings.removeWallpaper">移除壁纸</button>
+              <span class="wp-file-name" id="wp-file-name" data-i18n="common.notSet">未设置</span>
             </div>
             <div class="wp-fit-row">
-              <span>适应模式</span>
+              <span data-i18n="settings.fit">适应模式</span>
               <div class="seg-btn-group" id="wp-fit-group">
-                <button type="button" class="seg-btn" data-value="cover">填充</button>
-                <button type="button" class="seg-btn" data-value="contain">适应</button>
-                <button type="button" class="seg-btn" data-value="stretch">拉伸</button>
+                <button type="button" class="seg-btn" data-value="cover" data-i18n="settings.fitCover">填充</button>
+                <button type="button" class="seg-btn" data-value="contain" data-i18n="settings.fitContain">适应</button>
+                <button type="button" class="seg-btn" data-value="stretch" data-i18n="settings.fitStretch">拉伸</button>
               </div>
             </div>
             <div class="wp-fit-row">
-              <span>入库方式</span>
+              <span data-i18n="settings.storeMode">入库方式</span>
               <div class="seg-btn-group" id="wp-store-group">
-                <button type="button" class="seg-btn" data-value="compress">压缩 JPEG</button>
-                <button type="button" class="seg-btn" data-value="copy">原图复制</button>
+                <button type="button" class="seg-btn" data-value="compress" data-i18n="settings.storeCompress">压缩 JPEG</button>
+                <button type="button" class="seg-btn" data-value="copy" data-i18n="settings.storeCopy">原图复制</button>
               </div>
             </div>
           </div>
@@ -487,13 +500,13 @@
         <div class="panel" id="accent-panel" data-cat="appearance">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:10px;">
             <div>
-              <div class="panel-label">主题强调色</div>
-              <div class="panel-desc">自动：从当前壁纸提取主色派生；手动：指定固定颜色</div>
+              <div class="panel-label" data-i18n="settings.accent">主题强调色</div>
+              <div class="panel-desc" data-i18n="settings.accentDesc">自动：从当前壁纸提取主色派生；手动：指定固定颜色</div>
             </div>
             <div class="wp-row">
               <div class="seg-btn-group" id="accent-mode-group">
-                <button type="button" class="seg-btn" data-value="auto">自动取色</button>
-                <button type="button" class="seg-btn" data-value="manual">手动指定</button>
+                <button type="button" class="seg-btn" data-value="auto" data-i18n="settings.accentAuto">自动取色</button>
+                <button type="button" class="seg-btn" data-value="manual" data-i18n="settings.accentManual">手动指定</button>
               </div>
               <input type="color" id="accent-color-input" value="#2e7df6" />
             </div>
@@ -503,30 +516,30 @@
         <div class="panel" data-cat="appearance">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:10px;">
             <div>
-              <div class="panel-label">深色模式卡片底色</div>
-              <div class="panel-desc">仅深色模式生效；浅色模式固定浅灰底色</div>
+              <div class="panel-label" data-i18n="settings.cardBg">深色模式卡片底色</div>
+              <div class="panel-desc" data-i18n="settings.cardBgDesc">仅深色模式生效；浅色模式固定浅灰底色</div>
             </div>
             <div class="segment-capsule" id="card-bg-capsule">
               <div class="seg-slider"></div>
-              <div class="seg-option" data-value="solid">纯黑不透明</div>
-              <div class="seg-option" data-value="glass">毛玻璃</div>
+              <div class="seg-option" data-value="solid" data-i18n="settings.cardSolid">纯黑不透明</div>
+              <div class="seg-option" data-value="glass" data-i18n="settings.cardGlass">毛玻璃</div>
             </div>
           </div>
         </div>
 
-        <div class="settings-group-title" data-cat="download">下载</div>
+        <div class="settings-group-title" data-cat="download" data-i18n="settings.groupDownload">下载</div>
         <div class="panel" data-cat="download">
           <div class="panel-row" style="flex-direction:column;align-items:stretch;gap:10px;">
             <div>
-              <div class="panel-label">模组下载线程</div>
-              <div class="panel-desc">部分服务器不支持分块多线程，会自动降级为单线程；线程越高带宽占用越大，过高可能触发服务器连接限制</div>
+              <div class="panel-label" data-i18n="settings.threads">模组下载线程</div>
+              <div class="panel-desc" data-i18n="settings.threadsDesc">部分服务器不支持分块多线程，会自动降级为单线程；线程越高带宽占用越大，过高可能触发服务器连接限制</div>
             </div>
             <div class="segment-capsule" id="dl-thread-capsule">
               <div class="seg-slider"></div>
-              <div class="seg-option" data-value="1">单线程</div>
-              <div class="seg-option" data-value="4">4线程</div>
-              <div class="seg-option" data-value="8">8线程</div>
-              <div class="seg-option" data-value="16">16线程</div>
+              <div class="seg-option" data-value="1" data-i18n="settings.thread1">单线程</div>
+              <div class="seg-option" data-value="4" data-i18n="settings.thread4">4线程</div>
+              <div class="seg-option" data-value="8" data-i18n="settings.thread8">8线程</div>
+              <div class="seg-option" data-value="16" data-i18n="settings.thread16">16线程</div>
             </div>
           </div>
         </div>
@@ -534,41 +547,41 @@
         <div class="panel" data-cat="download">
           <div class="panel-row">
             <div>
-              <div class="panel-label">网络代理</div>
-              <div class="panel-desc">模组下载缓慢或失败时可填写 HTTP 代理（如 127.0.0.1:7890），留空则使用系统代理</div>
-              <input type="text" id="proxy-input" placeholder="例如 127.0.0.1:7890" style="margin-top:8px;width:280px;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;" />
+              <div class="panel-label" data-i18n="settings.proxy">网络代理</div>
+              <div class="panel-desc" data-i18n="settings.proxyDesc">模组下载缓慢或失败时可填写 HTTP 代理（如 127.0.0.1:7890），留空则使用系统代理</div>
+              <input type="text" id="proxy-input" placeholder="例如 127.0.0.1:7890" data-i18n-ph="settings.proxyPh" style="margin-top:8px;width:280px;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;" />
             </div>
-            <button class="btn small primary" id="btn-proxy-save">保存代理</button>
+            <button class="btn small primary" id="btn-proxy-save" data-i18n="settings.saveProxy">保存代理</button>
           </div>
         </div>
 
         <div class="panel" data-cat="download">
           <div class="panel-row">
             <div>
-              <div class="panel-label">模组下载目录</div>
-              <div class="panel-desc" id="dl-dir-label">未设置（默认浏览器下载目录）</div>
+              <div class="panel-label" data-i18n="settings.dlDir">模组下载目录</div>
+              <div class="panel-desc" id="dl-dir-label" data-i18n="settings.dlDirUnset">未设置（默认浏览器下载目录）</div>
             </div>
-            <button class="btn small" id="btn-dl-dir">选择目录</button>
+            <button class="btn small" id="btn-dl-dir" data-i18n="settings.selectDir">选择目录</button>
           </div>
         </div>
 
-        <div class="settings-group-title" data-cat="backup">备份</div>
-        <div class="section-title-row" data-cat="backup"><h3>云端备份</h3></div>
+        <div class="settings-group-title" data-cat="backup" data-i18n="settings.groupBackup">备份</div>
+        <div class="section-title-row" data-cat="backup"><h3 data-i18n="settings.cloudBackup">云端备份</h3></div>
         <div class="panel" data-cat="backup">
           <div class="panel-row" style="align-items:flex-start;">
             <div style="flex:1;">
-              <div class="panel-label">WebDAV 直传云端（推荐，坚果云等）</div>
-              <div class="panel-desc">填写后备份会直接上传到云端，启动器本地不留副本。坚果云在「账户信息→安全选项→第三方应用管理」可生成 WebDAV 密码。OneDrive/百度网盘不支持 WebDAV，请改用下方同步目录。</div>
-              <input type="text" id="webdav-url" placeholder="服务器地址，如 https://dav.jianguoyun.com/dav/SFS备份/" style="margin-top:8px;width:100%;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;box-sizing:border-box;" />
+              <div class="panel-label" data-i18n="settings.webdav">WebDAV 直传云端（推荐，坚果云等）</div>
+              <div class="panel-desc" data-i18n="settings.webdavDesc">填写后备份会直接上传到云端，启动器本地不留副本。坚果云在「账户信息→安全选项→第三方应用管理」可生成 WebDAV 密码。OneDrive/百度网盘不支持 WebDAV，请改用下方同步目录。</div>
+              <input type="text" id="webdav-url" placeholder="服务器地址，如 https://dav.jianguoyun.com/dav/SFS备份/" data-i18n-ph="settings.webdavUrlPh" style="margin-top:8px;width:100%;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;box-sizing:border-box;" />
               <div style="display:flex;gap:8px;margin-top:8px;">
-                <input type="text" id="webdav-user" placeholder="账号（坚果云为注册邮箱）" style="flex:1;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;" />
-                <input type="password" id="webdav-pass" placeholder="WebDAV 密码/应用密码" style="flex:1;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;" />
+                <input type="text" id="webdav-user" placeholder="账号（坚果云为注册邮箱）" data-i18n-ph="settings.webdavUserPh" style="flex:1;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;" />
+                <input type="password" id="webdav-pass" placeholder="WebDAV 密码/应用密码" data-i18n-ph="settings.webdavPassPh" style="flex:1;background:var(--bg-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;" />
               </div>
-              <div class="panel-desc" id="webdav-status" style="margin-top:6px;">未配置</div>
+              <div class="panel-desc" id="webdav-status" style="margin-top:6px;" data-i18n="settings.webdavUnset">未配置</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;margin-left:12px;">
-              <button class="btn small" id="btn-webdav-test">测试连接</button>
-              <button class="btn small primary" id="btn-webdav-save">保存</button>
+              <button class="btn small" id="btn-webdav-test" data-i18n="settings.testConn">测试连接</button>
+              <button class="btn small primary" id="btn-webdav-save" data-i18n="common.save">保存</button>
             </div>
           </div>
         </div>
@@ -576,48 +589,48 @@
         <div class="panel" data-cat="backup">
           <div class="panel-row">
             <div>
-              <div class="panel-label">网盘本地同步目录（OneDrive/百度网盘用）</div>
-              <div class="panel-desc" id="cloud-dir-label">未设置（已配置 WebDAV 时优先直传；均未配置时，备份前会提示选择，未选择则不执行备份）</div>
+              <div class="panel-label" data-i18n="settings.cloudDir">网盘本地同步目录（OneDrive/百度网盘用）</div>
+              <div class="panel-desc" id="cloud-dir-label" data-i18n="settings.cloudDirUnset">未设置（已配置 WebDAV 时优先直传；均未配置时，备份前会提示选择，未选择则不执行备份）</div>
             </div>
-            <button class="btn small" id="btn-cloud-dir">选择目录</button>
+            <button class="btn small" id="btn-cloud-dir" data-i18n="settings.selectDir">选择目录</button>
           </div>
         </div>
 
-        <div class="section-title-row" data-cat="other"><h3>诊断与日志</h3></div>
+        <div class="section-title-row" data-cat="other"><h3 data-i18n="settings.diag">诊断与日志</h3></div>
         <div class="panel" data-cat="other">
           <div class="panel-row">
             <div>
-              <div class="panel-label">运行日志</div>
-              <div class="panel-desc">遇到问题时可打开日志文件夹自行取用；启动器不提供一键导出</div>
-              <div class="panel-desc" style="margin-top:6px;">日志目录：<span id="log-dir-label">正在检测…</span></div>
+              <div class="panel-label" data-i18n="settings.log">运行日志</div>
+              <div class="panel-desc" data-i18n="settings.logDesc">遇到问题时可打开日志文件夹自行取用；启动器不提供一键导出</div>
+              <div class="panel-desc" style="margin-top:6px;"><span data-i18n="settings.logDir">日志目录：</span><span id="log-dir-label">正在检测…</span></div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="btn small" id="btn-open-logdir">打开日志文件夹</button>
-              <button class="btn small" id="btn-open-appdir">打开程序目录</button>
+              <button class="btn small" id="btn-open-logdir" data-i18n="settings.openLogDir">打开日志文件夹</button>
+              <button class="btn small" id="btn-open-appdir" data-i18n="settings.openAppDir">打开程序目录</button>
             </div>
           </div>
         </div>
 
         <div class="panel" data-cat="other">
-          <div class="panel-label">关于</div>
+          <div class="panel-label" data-i18n="settings.about">关于</div>
           <div class="panel-desc" id="about-line"></div>
         </div>
       </section>
 
       <!-- ===== 关于 ===== -->
       <section class="view" id="view-about">
-        <h2 class="page-title">关于</h2>
+        <h2 class="page-title" data-i18n="about.title">关于</h2>
         <div class="panel about-card">
           <img class="about-logo" src="assets/app-icon.ico" alt="SFS启动器" />
-          <h2>SFS 启动器</h2>
-          <div class="about-credit">制作者：by <b>ml</b></div>
-          <div class="about-credit">模组商店：by a future star</div>
-          <div class="about-credit">汉化：Arctic.</div>
-          <div class="about-credit">测试：10086</div>
+          <h2 data-i18n="app.name">SFS 启动器</h2>
+          <div class="about-credit"><span data-i18n="about.by">制作者：</span>by <b>ml</b></div>
+          <div class="about-credit"><span data-i18n="about.store">模组商店：</span>by a future star</div>
+          <div class="about-credit"><span data-i18n="about.i18n">汉化：</span>Arctic.</div>
+          <div class="about-credit"><span data-i18n="about.tester">测试：</span>10086</div>
           
           <div class="about-version" id="about-version"></div>
 
-          <div class="section-title-row"><h3>相关网站</h3></div>
+          <div class="section-title-row"><h3 data-i18n="about.sites">相关网站</h3></div>
           <div class="about-links" id="about-links"></div>
         </div>
       </section>
@@ -631,35 +644,35 @@
       <div class="inst-head">
         <div class="inst-title">
           <img class="logo" src="assets/app-icon.ico" alt="SFS启动器" />
-          <span>SFS 启动器</span>
+          <span data-i18n="app.name">SFS 启动器</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <button class="win-btn win-btn-primary inst-install" id="inst-confirm">安装</button>
-          <button class="inst-x" id="inst-close" title="关闭">&times;</button>
+          <button class="win-btn win-btn-primary inst-install" id="inst-confirm" data-i18n="inst.install">安装</button>
+          <button class="inst-x" id="inst-close" title="关闭" data-i18n-title="common.close">&times;</button>
         </div>
       </div>
       <div class="inst-hero">
         <div class="inst-pack">
           <img id="inst-game-icon" src="assets/game-icon.png" alt="game" />
         </div>
-        <div class="inst-name">添加游戏实例</div>
-        <div class="inst-desc">选择本机 Spaceflight Simulator 的游戏目录或可执行文件</div>
+        <div class="inst-name" data-i18n="inst.title">添加游戏实例</div>
+        <div class="inst-desc" data-i18n="inst.desc">选择本机 Spaceflight Simulator 的游戏目录或可执行文件</div>
       </div>
       <div class="inst-form">
         <div class="inst-field">
-          <label>游戏名称</label>
+          <label data-i18n="inst.name">游戏名称</label>
           <input id="inst-name-input" placeholder="Spaceflight Simulator" />
         </div>
         <div class="inst-field">
-          <label>安装位置</label>
+          <label data-i18n="inst.location">安装位置</label>
           <div class="inst-path-row">
-            <input id="inst-path-input" placeholder="可点击右侧「浏览」选择" />
-            <button class="inst-browse" id="inst-browse"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:5px;vertical-align:-2px"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>浏览</button>
+            <input id="inst-path-input" placeholder="可点击右侧「浏览」选择" data-i18n-ph="inst.pathPh" />
+            <button class="inst-browse" id="inst-browse"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:5px;vertical-align:-2px"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg><span data-i18n="common.browse">浏览</span></button>
           </div>
         </div>
       </div>
       <div class="inst-actions">
-        <button class="win-btn" id="inst-cancel">更多选项</button>
+        <button class="win-btn" id="inst-cancel" data-i18n="inst.moreOptions">更多选项</button>
       </div>
     </div>
   </div>
@@ -672,15 +685,15 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 6c.6 0 1 .4 1 1v5c0 .6-.4 1-1 1s-1-.4-1-1V9c0-.6.4-1 1-1zm0 9.4a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/></svg>
         </div>
         <div class="crash-head-text">
-          <div class="crash-title">啊呜，游戏似乎崩溃了喵</div>
-          <div class="crash-sub">启动器检测到游戏异常退出。可以打开过滤后的日志排查，或联系作者。</div>
+          <div class="crash-title" data-i18n="crash.title">啊呜，游戏似乎崩溃了喵</div>
+          <div class="crash-sub" data-i18n="crash.sub">启动器检测到游戏异常退出。可以打开过滤后的日志排查，或联系作者。</div>
         </div>
       </div>
       <div class="crash-actions">
-        <button class="win-btn" id="crash-ok">知道啦</button>
+        <button class="win-btn" id="crash-ok" data-i18n="common.gotIt">知道啦</button>
         <span class="crash-spacer"></span>
-        <button class="win-btn" id="crash-author">询问作者</button>
-        <button class="win-btn win-btn-primary" id="crash-log">打开日志</button>
+        <button class="win-btn" id="crash-author" data-i18n="crash.askAuthor">询问作者</button>
+        <button class="win-btn win-btn-primary" id="crash-log" data-i18n="crash.openLog">打开日志</button>
       </div>
     </div>
   </div>
@@ -688,29 +701,29 @@
   <!-- 关闭确认（首次询问，可记住选择） -->
   <div class="win-dialog-mask" id="close-dialog" hidden>
     <div class="win-dialog close-dialog">
-      <div class="win-dialog-title">关闭 SFS 启动器</div>
+      <div class="win-dialog-title" data-i18n="closeDialog.title">关闭 SFS 启动器</div>
       <div class="win-dialog-body">
         <div class="close-choice-list">
           <label class="close-choice">
             <input type="radio" name="close-choice" value="tray" checked />
             <span class="close-choice-text">
-              <span class="close-choice-main">最小化到托盘</span>
-              <span class="close-choice-sub">启动器继续在后台运行，可从托盘图标恢复；手动打开游戏时仍会唤起</span>
+              <span class="close-choice-main" data-i18n="closeDialog.tray">最小化到托盘</span>
+              <span class="close-choice-sub" data-i18n="closeDialog.traySub">启动器继续在后台运行，可从托盘图标恢复；手动打开游戏时仍会唤起</span>
             </span>
           </label>
           <label class="close-choice">
             <input type="radio" name="close-choice" value="quit" />
             <span class="close-choice-text">
-              <span class="close-choice-main">直接退出</span>
-              <span class="close-choice-sub">完全关闭启动器，不再驻留后台</span>
+              <span class="close-choice-main" data-i18n="closeDialog.quit">直接退出</span>
+              <span class="close-choice-sub" data-i18n="closeDialog.quitSub">完全关闭启动器，不再驻留后台</span>
             </span>
           </label>
         </div>
-        <label class="close-remember"><input type="checkbox" id="close-remember" /> 记住我的选择，不再询问（可在设置中修改）</label>
+        <label class="close-remember"><input type="checkbox" id="close-remember" /><span data-i18n="closeDialog.remember">记住我的选择，不再询问（可在设置中修改）</span></label>
       </div>
       <div class="win-dialog-actions">
-        <button class="win-btn" id="close-cancel">取消</button>
-        <button class="win-btn win-btn-primary" id="close-confirm">确定</button>
+        <button class="win-btn" id="close-cancel" data-i18n="common.cancel">取消</button>
+        <button class="win-btn win-btn-primary" id="close-confirm" data-i18n="common.confirm">确定</button>
       </div>
     </div>
   </div>
@@ -718,30 +731,30 @@
   <!-- 作者信息弹窗 -->
   <div class="win-dialog-mask" id="author-dialog" hidden>
     <div class="win-dialog">
-      <div class="win-dialog-title">联系作者</div>
+      <div class="win-dialog-title" data-i18n="author.title">联系作者</div>
       <div class="win-dialog-body">
-        <div class="author-row">制作者：<b>ml</b>　QQ：875230112</div>
-        <div class="author-tip">可以复制 QQ 号添加好友，把崩溃日志发给他们喵～</div>
+        <div class="author-row"><span data-i18n="author.by">制作者：</span><b>ml</b>　QQ：875230112</div>
+        <div class="author-tip" data-i18n="author.tip">可以复制 QQ 号添加好友，把崩溃日志发给他们喵～</div>
       </div>
-      <div class="win-dialog-actions"><button class="win-btn win-btn-primary" id="author-close">知道啦</button></div>
+      <div class="win-dialog-actions"><button class="win-btn win-btn-primary" id="author-close" data-i18n="common.gotIt">知道啦</button></div>
     </div>
   </div>
 
   <!-- 注入汉化：集成 SFSChineseInjector（作者 Arctic.，MIT，已获作者同意） -->
   <div class="win-dialog-mask" id="han-dialog" hidden>
     <div class="win-dialog han-dialog">
-      <div class="win-dialog-title">注入汉化</div>
+      <div class="win-dialog-title" data-i18n="han.title">注入汉化</div>
       <div class="han-credit">by Arctic.　QQ 2450278139</div>
       <div class="win-dialog-body">
-        <div class="han-line"><span class="han-k">游戏目录</span><span class="han-v" id="han-dir">读取中…</span></div>
+        <div class="han-line"><span class="han-k" data-i18n="han.dir">游戏目录</span><span class="han-v" id="han-dir">读取中…</span></div>
         <div class="han-desc"><b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\Custom Translations</code>，并把语言切到该词表。只多一个 txt，删掉即恢复英文。</div>
         <div class="han-desc"><b>DLL 汉化</b>：游戏运行时注入进程，把模组里的中英文统一成中文字体。不改 <code>Mods</code> 目录，不落盘。</div>
-        <div class="han-warn">两个开关都在注入器界面里，由它自己控制，启动器不代管。注入属于进程注入，部分杀软会拦截；被拦截时游戏仍是英文。</div>
-        <div class="han-src">开源地址 <code>github.com/Arctic-Ice67/SFSChineseInjector</code></div>
+        <div class="han-warn" data-i18n="han.warn">两个开关都在注入器界面里，由它自己控制，启动器不代管。注入属于进程注入，部分杀软会拦截；被拦截时游戏仍是英文。</div>
+        <div class="han-src"><span data-i18n="han.src">开源地址</span> <code>github.com/Arctic-Ice67/SFSChineseInjector</code></div>
       </div>
       <div class="win-dialog-actions">
-        <button class="win-btn" id="han-cancel">取消</button>
-        <button class="win-btn win-btn-primary" id="han-run">打开注入器</button>
+        <button class="win-btn" id="han-cancel" data-i18n="common.cancel">取消</button>
+        <button class="win-btn win-btn-primary" id="han-run" data-i18n="han.run">打开注入器</button>
       </div>
     </div>
   </div>
@@ -778,15 +791,15 @@
   <!-- 模组导入识别弹窗 -->
   <div class="win-dialog-mask" id="import-dialog" hidden>
     <div class="win-dialog confirm-dialog" style="max-width:480px">
-      <div class="win-dialog-title">模组导入</div>
+      <div class="win-dialog-title" data-i18n="import.title">模组导入</div>
       <div class="win-dialog-body">
         <div id="import-file-list" style="margin-bottom:12px"></div>
-        <div class="panel-label" style="margin-bottom:6px">导入到实例</div>
+        <div class="panel-label" style="margin-bottom:6px" data-i18n="import.toInstance">导入到实例</div>
         <select id="import-inst-select" class="inst-select" style="width:100%"></select>
       </div>
       <div class="win-dialog-actions">
-        <button class="win-btn" id="import-cancel">取消</button>
-        <button class="win-btn win-btn-primary" id="import-ok">导入</button>
+        <button class="win-btn" id="import-cancel" data-i18n="common.cancel">取消</button>
+        <button class="win-btn win-btn-primary" id="import-ok" data-i18n="import.ok">导入</button>
       </div>
     </div>
   </div>
@@ -799,8 +812,8 @@
         <div class="confirm-body" id="confirm-body"></div>
       </div>
       <div class="win-dialog-actions">
-        <button class="win-btn" id="confirm-cancel">取消</button>
-        <button class="win-btn win-btn-primary" id="confirm-ok">确定</button>
+        <button class="win-btn" id="confirm-cancel" data-i18n="common.cancel">取消</button>
+        <button class="win-btn win-btn-primary" id="confirm-ok" data-i18n="common.confirm">确定</button>
       </div>
     </div>
   </div>
@@ -813,18 +826,18 @@
         <div class="mod-detail-body" id="mod-detail-body">
           <div class="mod-detail-cover" id="mod-detail-cover"></div>
           <div class="mod-detail-info">
-            <div class="mod-detail-row"><span class="mod-detail-label">作者：</span><span id="mod-detail-author">-</span></div>
-            <div class="mod-detail-row"><span class="mod-detail-label">版本：</span><span id="mod-detail-version">-</span></div>
-            <div class="mod-detail-row"><span class="mod-detail-label">大小：</span><span id="mod-detail-size">-</span></div>
-            <div class="mod-detail-row"><span class="mod-detail-label">兼容：</span><span id="mod-detail-compat">-</span></div>
-            <div class="mod-detail-row"><span class="mod-detail-label">标签：</span><span id="mod-detail-tags">-</span></div>
+            <div class="mod-detail-row"><span class="mod-detail-label" data-i18n="modDetail.author">作者：</span><span id="mod-detail-author">-</span></div>
+            <div class="mod-detail-row"><span class="mod-detail-label" data-i18n="modDetail.version">版本：</span><span id="mod-detail-version">-</span></div>
+            <div class="mod-detail-row"><span class="mod-detail-label" data-i18n="modDetail.size">大小：</span><span id="mod-detail-size">-</span></div>
+            <div class="mod-detail-row"><span class="mod-detail-label" data-i18n="modDetail.compat">兼容：</span><span id="mod-detail-compat">-</span></div>
+            <div class="mod-detail-row"><span class="mod-detail-label" data-i18n="modDetail.tags">标签：</span><span id="mod-detail-tags">-</span></div>
           </div>
           <div class="mod-detail-desc" id="mod-detail-desc"></div>
         </div>
       </div>
       <div class="win-dialog-actions">
-        <button class="win-btn" id="mod-detail-close">关闭</button>
-        <button class="win-btn win-btn-primary" id="mod-detail-download">下载</button>
+        <button class="win-btn" id="mod-detail-close" data-i18n="common.close">关闭</button>
+        <button class="win-btn win-btn-primary" id="mod-detail-download" data-i18n="common.download">下载</button>
       </div>
     </div>
   </div>
@@ -832,29 +845,29 @@
   <!-- 添加方式弹窗 -->
   <div class="win-dialog-mask" id="add-method-dialog" hidden>
     <div class="win-dialog">
-      <div class="win-dialog-title">添加方式</div>
+      <div class="win-dialog-title" data-i18n="addMethod.title">添加方式</div>
       <div class="win-dialog-body">
-        <div class="panel-desc" style="margin-bottom:12px;">即将把 <b id="add-method-name">[sfs]</b> 加入游戏库：<br/><code id="add-method-path">E:\sfs\.sfs</code></div>
+        <div class="panel-desc" style="margin-bottom:12px;"><span data-i18n="addMethod.intro">即将把</span> <b id="add-method-name">[sfs]</b> <span data-i18n="addMethod.intro2">加入游戏库：</span><br/><code id="add-method-path">E:\sfs\.sfs</code></div>
         <div class="add-method-list">
           <label class="add-method-item">
             <input type="radio" name="add-method" value="copy" checked />
             <span class="add-method-text">
-              <span class="add-method-main">复制到游戏库</span>
-              <span class="add-method-sub">保留原文件夹，耗时取决于体积</span>
+              <span class="add-method-main" data-i18n="addMethod.copy">复制到游戏库</span>
+              <span class="add-method-sub" data-i18n="addMethod.copySub">保留原文件夹，耗时取决于体积</span>
             </span>
           </label>
           <label class="add-method-item">
             <input type="radio" name="add-method" value="link" />
             <span class="add-method-text">
-              <span class="add-method-main">创建目录联接</span>
-              <span class="add-method-sub">不占额外空间，仅在本机有效（需要管理员权限）</span>
+              <span class="add-method-main" data-i18n="addMethod.link">创建目录联接</span>
+              <span class="add-method-sub" data-i18n="addMethod.linkSub">不占额外空间，仅在本机有效（需要管理员权限）</span>
             </span>
           </label>
         </div>
       </div>
       <div class="win-dialog-actions">
-        <button class="win-btn" id="add-method-cancel">取消</button>
-        <button class="win-btn win-btn-primary" id="add-method-ok">确定</button>
+        <button class="win-btn" id="add-method-cancel" data-i18n="common.cancel">取消</button>
+        <button class="win-btn win-btn-primary" id="add-method-ok" data-i18n="common.confirm">确定</button>
       </div>
     </div>
   </div>
@@ -885,11 +898,15 @@
   <div class="drop-overlay" id="drop-overlay" hidden>
     <div class="drop-overlay-inner">
       <div class="drop-icon">⤓</div>
-      <div class="drop-text">松开以导入模组</div>
-      <div class="drop-sub">支持 .pack / .dll / 蓝图 / 涂装包 / 扩展包 ZIP</div>
+      <div class="drop-text" data-i18n="drop.text">松开以导入模组</div>
+      <div class="drop-sub" data-i18n="drop.sub">支持 .pack / .dll / 蓝图 / 涂装包 / 扩展包 ZIP</div>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
+  <script src="locales-zh.js"></script>
+  <script src="locales-en.js"></script>
+  <script src="locales-src-en.js"></script>
   <script src="idle-tasks.js"></script>
   <script src="assets/mcu.js"></script>
   <script src="app-theme.js"></script>
