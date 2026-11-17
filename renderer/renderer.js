@@ -312,6 +312,16 @@ async function init() {
   AppTheme.applyTheme(state.cfg.theme || 'dark');
   // 琉璃控制器：壁纸 / 取色派生 / 材质参数，独立于 DWM 材质链路
   try { LiuliTheme.setCfg(state.cfg); LiuliTheme.apply(); } catch (e) { console.warn('liuli apply failed:', e); }
+  // 开机首启兜底：系统玻璃没挂上时垫实色底，保住文字可读；材质恢复后自动撤掉
+  try {
+    if (window.launcher.onGlassMaterialResult) {
+      window.launcher.onGlassMaterialResult((d) => {
+        const bad = !!(d && d.ok === false);
+        document.documentElement.classList.toggle('glass-fallback', bad);
+        if (document.body) document.body.classList.toggle('glass-fallback', bad);
+      });
+    }
+  } catch (e) {}
   // 性能档位标识：弱机档（weak）挂 html.perf-weak，CSS 据此砍掉全屏模糊/重 hover 阴影/长过渡，保证点击流畅。
   try {
     const _sysInfo = await window.launcher.systemInfo?.() || {};
@@ -462,6 +472,8 @@ async function init() {
     if (d.state === 'completed') { try { delete _dlFailCount[d.name || '']; } catch (_) {} }
   });
   try { window.__bt && window.__bt('renderer_ready'); } catch (e) {}
+  // 首批内容已落地，通知主进程可以显示窗口（主进程另有 3 秒兜底，不会因为漏发卡住不弹窗）
+  try { window.launcher.uiReady && window.launcher.uiReady(); } catch (e) {}
   console.log('RENDERER_READY');
 }
 
@@ -1705,6 +1717,13 @@ function bindAppearanceControls() {
     if (lpSaveTimer) clearTimeout(lpSaveTimer);
     lpSaveTimer = setTimeout(() => { window.launcher.configSave(cfg); }, 350);
   };
+  function lpFill(el) {
+    if (!el) return;
+    const min = Number(el.min || 0), max = Number(el.max || 100);
+    const pct = max > min ? ((Number(el.value) - min) / (max - min)) * 100 : 0;
+    el.style.setProperty('--lp-fill', pct.toFixed(2) + '%');
+  }
+  function lpFillAll() { ['opacity', 'veil', 'blur', 'glow'].forEach(k => lpFill(lpEls[k])); }
   function lpSync() {
     if (!lpEls.opacity) return;
     const p = (typeof LiuliTheme.currentParams === 'function')
@@ -1724,30 +1743,35 @@ function bindAppearanceControls() {
     lpEls.glowVal.textContent = Math.round(p.glow * 100) + '%';
     const dis = !liuli;
     ['opacity', 'veil', 'blur', 'glow'].forEach(k => { if (lpEls[k]) lpEls[k].disabled = dis; });
+    lpFillAll();
   }
   window.__lpSync = lpSync;
   if (lpEls.opacity) {
     lpEls.opacity.addEventListener('input', () => {
       const v = Number(lpEls.opacity.value) / 100;
       lpEls.opacityVal.textContent = Math.round(v * 100) + '%';
+      lpFill(lpEls.opacity);
       try { LiuliTheme.applyParams({ opacity: v }); } catch (e) {}
       lpSaveSoon();
     });
     lpEls.veil.addEventListener('input', () => {
       const v = Number(lpEls.veil.value) / 100;
       lpEls.veilVal.textContent = Math.round(v * 100) + '%';
+      lpFill(lpEls.veil);
       try { LiuliTheme.applyParams({ veil: v }); } catch (e) {}
       lpSaveSoon();
     });
     lpEls.blur.addEventListener('input', () => {
       const v = Number(lpEls.blur.value);
       lpEls.blurVal.textContent = v + 'px';
+      lpFill(lpEls.blur);
       try { LiuliTheme.applyParams({ blur: v }); } catch (e) {}
       lpSaveSoon();
     });
     lpEls.glow.addEventListener('input', () => {
       const v = Number(lpEls.glow.value) / 100;
       lpEls.glowVal.textContent = Math.round(v * 100) + '%';
+      lpFill(lpEls.glow);
       try { LiuliTheme.applyParams({ glow: v }); } catch (e) {}
       lpSaveSoon();
     });

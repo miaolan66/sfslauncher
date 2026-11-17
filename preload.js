@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('launcher', {
   glassSetState: (s) => ipcRenderer.invoke('glass:state', s),
   glassMaterialFallback: () => ipcRenderer.invoke('glass:material-fallback'),
   glassInitialSync: () => ipcRenderer.sendSync('glass:initial'),
+  uiReady: () => ipcRenderer.send('ui:ready'),
+  onGlassMaterialResult: (cb) => ipcRenderer.on('glass:material-result', (_e, d) => cb(d)),
   onGlassTransitionFade: (cb) => ipcRenderer.on('glass:transition-fade', () => cb()),
   onGlassModeChanged: (cb) => ipcRenderer.on('glass:mode-changed', (_e, d) => cb(d)),
 

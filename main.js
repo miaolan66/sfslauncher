@@ -721,6 +721,7 @@ let recreating = false;     // 毛玻璃切换导致的销毁重建
 let pendingBounds = null;   // 重建时保留窗口位置与尺寸
 let recreateOldWin = null;          // 无缝重建：暂存旧窗，新窗就绪显示后再销毁
 let pendingGlassTransition = false; // 本次建窗为毛玻璃开关重建（新窗首帧盖过渡遮罩）
+let bootReveal = null;              // 当前窗口的"内容就绪后显示"回调，由 createWindow 绑定
 
 // ---------- 毛玻璃应用（Win11 系统 acrylic / Win10 DWM 亚克力或 Aero） ----------
 const glassState = { enabled: false, theme: 'dark', mode: 'off' };
@@ -1003,6 +1004,50 @@ function createWindow() {
       mainWindow.hide();
     }
   });
+  // ── 首次显示时机：等渲染端首批内容落地，不要在空玻璃上先亮一帧 ──
+  // ready-to-show 只代表首帧画出来了，此时壁纸/玻璃材质还在逐层铺，实例数据也在等 IPC，
+  // 合起来就是用户看到的"只有毛玻璃、一个字都没有"。改由渲染端 ui:ready 决定，3 秒兜底强制显示。
+  let bootShowPending = false;
+  let bootShowTimer = null;
+  function scheduleBootShow() {
+    bootShowPending = true;
+    if (bootShowTimer) clearTimeout(bootShowTimer);
+    bootShowTimer = setTimeout(() => { revealBootWindow('timeout'); }, 3000);
+  }
+  function revealBootWindow(why) {
+    if (!bootShowPending) return;
+    bootShowPending = false;
+    if (bootShowTimer) { clearTimeout(bootShowTimer); bootShowTimer = null; }
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (startHidden && !windowWantedVisible) return;
+    try {
+      mainWindow.show(); __tl('window_shown_' + why);
+      if (!isSmoke) mainWindow.focus();
+      if (!layered) applyWindowGlass();
+      // 开机首启时系统玻璃可能还没就绪：显示后分三次复核材质，失败就让渲染端垫实色底，成功再撤掉
+      [1000, 3000, 8000].forEach(ms => setTimeout(() => reportGlassMaterial(probeGlassMaterial()), ms));
+    } catch (e) {}
+  }
+  // 复核当前系统玻璃是否真的挂上了。Win10 分层窗看 DWM apply 的返回值；
+  // Win11 的亚克力/云母在创建窗口时由系统指定，查不到状态，按成功处理，避免误判成故障垫底。
+  function probeGlassMaterial() {
+    try {
+      if (!mainWindow || mainWindow.isDestroyed()) return false;
+      if (glassState.enabled === false || glassState.mode === 'off') return true;
+      if (glassState.mode === 'acrylic' || glassState.mode === 'mica') return true;
+      const d = dwmGlass();
+      if (!d) return false;
+      return d.apply(mainWindow.getNativeWindowHandle(), {
+        enabled: true, theme: glassState.theme, build: winBuildNum, state: dwmStateFor(glassState.mode)
+      }) === true;
+    } catch (e) { return false; }
+  }
+  function reportGlassMaterial(ok) {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    try { mainWindow.webContents.send('glass:material-result', { ok: ok === true, mode: glassState.mode }); } catch (e) {}
+  }
+  bootReveal = revealBootWindow;
+
   // 首帧就绪后再显示，避免无框透明亚克力窗口在内容未就绪时进入合成竞态（白屏/卡住）
   // --hidden（开机常驻后台）时保持不显示，由托盘点击或游戏守望唤起
   mainWindow.once('ready-to-show', () => {
@@ -1015,10 +1060,15 @@ function createWindow() {
       try {
         // opaqueHold（createWindow 计算）：过渡到 Win10 透明材质时新窗先不透明 show，此处不上 DWM，改由下方延时切换；其余情况 show 前上材质。
         if (layered && !opaqueHold) reapplyDwmOnly(true);
-        mainWindow.show(); __tl('window_shown');
-        if (!isSmoke) mainWindow.focus();
-        // 非分层窗（关闭 / Win11）在显示后应用实色或系统材质。
-        if (!layered) applyWindowGlass();
+        if (pendingGlassTransition) {
+          // 重建窗口：旧窗在等着销毁，必须立刻显示，不能等内容就绪
+          mainWindow.show(); __tl('window_shown');
+          if (!isSmoke) mainWindow.focus();
+          if (!layered) applyWindowGlass();
+        } else {
+          // 首次/普通启动：等渲染端首批内容落地再显示，避免屏幕上先亮出一块只有玻璃的空窗
+          scheduleBootShow();
+        }
         if (pendingGlassTransition && recreateOldWin && !recreateOldWin.isDestroyed()) {
           const oldWin = recreateOldWin;
           recreateOldWin = null;
@@ -1355,6 +1405,9 @@ function registerIpc() {
 
   // 首帧防闪：preload 在 document-start 同步取回初始主题/玻璃/材质，首次绘制前写到 <html>，
   // 避免页面先按默认深色实色画一帧、异步配置回来再跳变玻璃（开窗闪烁）。只读主进程内存，不读盘。
+  // 渲染端首批内容渲染完成后上报；窗口此时可能还在等内容就绪，收到就立刻显示
+  ipcMain.on('ui:ready', () => { if (bootReveal) bootReveal('ui_ready'); });
+
   ipcMain.on('glass:initial', (e) => {
     e.returnValue = {
       enabled: glassState.enabled === true,

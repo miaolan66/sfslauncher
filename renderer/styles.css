@@ -14,6 +14,7 @@
   --danger: #f85149;
   --ok: #3fb950;
   --radius: 6px;
+  --range-track: rgba(255, 255, 255, 0.26);
 }
 [data-theme="light"] {
   --bg-solid: #f5f7fa;
@@ -29,6 +30,7 @@
   --accent-hover: #1a6ce0;
   --danger: #d1242f;
   --ok: #1a7f37;
+  --range-track: rgba(0, 0, 0, 0.18);
 }
 /* 毛玻璃材质：
    - Win11 acrylic / Win10 DWM 亚克力：模糊与 tint 由系统 DWM 合成（不吃渲染帧，保 60 帧）。
@@ -1231,8 +1233,15 @@ input[type="color"] {
 .lp-val { width: 48px; flex: none; text-align: right; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 input[type="range"] {
   -webkit-appearance: none; appearance: none;
-  height: 4px; border-radius: 2px; background: var(--border);
+  height: 4px; border-radius: 2px;
+  /* 已选段用强调色、未选段用 --range-track：琉璃档下 --border 几乎与底色同值，整条轨道会看不见，只剩一个圆点 */
+  background: linear-gradient(to right,
+    var(--accent) 0 var(--lp-fill, 0%),
+    var(--range-track) var(--lp-fill, 0%) 100%);
   outline: none; cursor: pointer; margin: 7px 0;
+}
+input[type="range"]:focus-visible {
+  box-shadow: 0 0 0 2px rgba(46, 125, 246, 0.45);
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
