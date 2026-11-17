@@ -1,0 +1,26 @@
+# 依赖与打包产物
+node_modules/
+dist/
+
+# 本地调试与验收用的临时产物（根目录下划线前缀）
+/_*
+
+# 根目录调试脚本、截图、视频、日志
+/cdp_*.js
+/test_tree.js
+/extract_frames.py
+/patch_main2.py
+/*.png
+/*.mp4
+/*.log
+video_frames/
+
+# 备份文件
+*.bak
+*.bak-*
+
+# 官网构建目录（线上版是 docs/index.html）
+site/
+
+# 内部审查报告
+/BUG审查报告-*.md

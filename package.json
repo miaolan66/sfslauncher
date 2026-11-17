@@ -1,0 +1,99 @@
+{
+  "name": "sfs-launcher",
+  "productName": "SFS 启动器",
+  "version": "0.88.0",
+  "description": "SFS 启动器",
+  "main": "main.js",
+  "author": "ml / a future star",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "iconv-lite": "^0.7.3",
+    "koffi": "^3.3.2"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "rcedit": "^5.0.1"
+  },
+  "build": {
+    "appId": "com.sfs.launcher",
+    "productName": "SFS 启动器",
+    "compression": "maximum",
+    "asar": true,
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "afterPack": "scripts/afterPack.js",
+    "asarUnpack": [
+      "**/node_modules/koffi/**",
+      "**/node_modules/@koromix/**"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/bin",
+        "to": "bin"
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "dwm-glass.js",
+      "win-reg.js",
+      "glass-config.js",
+      "win-proc.js",
+      "webdav.js",
+      "fs-worker.js",
+      "fileTasks.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SFS 启动器",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "uninstallDisplayName": "SFS 启动器",
+      "displayLanguageSelector": false,
+      "include": "build/installer.nsh",
+      "installerHeaderIcon": "build/header-icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp"
+    }
+  }
+}
