@@ -53,13 +53,23 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="nav.about">关于</span>
       </div>
 
-      <!-- 语言切换：左下角，按钮固定显示中英双语，避免只写一种语言时对面看不懂 -->
+      <!-- 语言切换：左下角，按钮固定显示中英双语；点击在上方展开选择框，框内显示当前语言 -->
       <div class="lang-switch" id="lang-switch">
-        <div class="lang-menu" id="lang-menu" hidden>
-          <div class="lang-option" data-lang="zh">简体中文</div>
-          <div class="lang-option" data-lang="en">English</div>
+        <div class="lang-menu" id="lang-menu" hidden role="menu" aria-label="语言 / Language">
+          <div class="lang-menu-head">
+            <span class="lang-menu-head-label" data-i18n="lang.current">当前语言</span>
+            <span class="lang-menu-head-value" id="lang-current-label">简体中文</span>
+          </div>
+          <button type="button" class="lang-option" data-lang="zh" role="menuitemradio" aria-checked="false">
+            <span class="lang-option-name">简体中文</span>
+            <svg class="lang-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+          <button type="button" class="lang-option" data-lang="en" role="menuitemradio" aria-checked="false">
+            <span class="lang-option-name">English</span>
+            <svg class="lang-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
         </div>
-        <button class="lang-btn" id="lang-btn" data-i18n-title="lang.switch">
+        <button class="lang-btn" id="lang-btn" data-i18n-title="lang.switch" aria-haspopup="menu" aria-expanded="false">
           <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z"/></svg>
           <span id="lang-current">语言 / Language</span>
         </button>

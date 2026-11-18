@@ -320,6 +320,7 @@ I18NRegister('en', {
   // ===== Language =====
   'lang.title': 'Language',
   'lang.switch': 'Switch language',
+  'lang.current': 'Current language',
 
   // ===== Native UI (tray / file dialogs / exported files) =====
   'native.trayTip': 'SFS Launcher',

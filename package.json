@@ -1,7 +1,7 @@
 {
   "name": "sfs-launcher",
   "productName": "SFS 启动器",
-  "version": "0.88.0",
+  "version": "0.88.1",
   "description": "SFS 启动器",
   "main": "main.js",
   "author": "ml / a future star",

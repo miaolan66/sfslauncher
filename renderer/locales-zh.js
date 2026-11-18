@@ -320,6 +320,7 @@ I18NRegister('zh', {
   // ===== 当前语言 =====
   'lang.title': '语言',
   'lang.switch': '切换语言',
+  'lang.current': '当前语言',
 
   // ===== 原生界面（托盘 / 文件对话框 / 导出文件）=====
   'native.trayTip': 'SFS 启动器',

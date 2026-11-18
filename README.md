@@ -4,7 +4,7 @@
 
 Spaceflight Simulator 的 Windows 启动器：实例、模组、蓝图、存档、外观收进一个窗口。
 
-当前版本 **0.88.0**，支持 Windows 10 / 11（x64）。游戏本体需要自行准备，这个工具不包含游戏文件。
+当前版本 **0.88.1**，支持 Windows 10 / 11（x64）。游戏本体需要自行准备，这个工具不包含游戏文件。
 
 官网与下载页：https://miaolan66.github.io/sfslauncher/
 
@@ -73,7 +73,7 @@ Spaceflight Simulator 的 Windows 启动器：实例、模组、蓝图、存档�
 
 ## 从源码运行
 
-源码压缩包在仓库根目录：`SFSLauncher-0.88.0-source.zip`。
+源码压缩包在仓库根目录：`SFSLauncher-0.88.1-source.zip`。
 
 需要 Node.js 18 以上、npm。
 

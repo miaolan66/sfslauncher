@@ -2,7 +2,7 @@
 
 A Windows launcher for Spaceflight Simulator. Instances, mods, blueprints, saves and appearance in one window.
 
-Current version **0.88.0**, Windows 10 / 11 (x64). The game is not bundled — you need your own copy.
+Current version **0.88.1**, Windows 10 / 11 (x64). The game is not bundled — you need your own copy.
 
 Website and downloads: https://miaolan66.github.io/sfslauncher/
 
@@ -73,7 +73,7 @@ Both packages are feature-identical and include the translation injector.
 
 ## Running from source
 
-The source archive is at the repository root: `SFSLauncher-0.88.0-source.zip`.
+The source archive is at the repository root: `SFSLauncher-0.88.1-source.zip`.
 
 Requires Node.js 18 or newer and npm.
 

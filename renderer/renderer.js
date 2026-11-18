@@ -305,24 +305,60 @@ function scheduleHeavyRenders() {
 function initLangSwitch() {
   const btn = $('#lang-btn');
   const menu = $('#lang-menu');
-  const cur = $('#lang-current');
+  const label = $('#lang-current-label');
   if (!btn || !menu) return;
+  const LANG_NAME = { zh: '简体中文', en: 'English' };
+  const options = Array.from(menu.querySelectorAll('.lang-option'));
   const sync = (lang) => {
-    $$('#lang-menu .lang-option').forEach(o => o.classList.toggle('active', o.dataset.lang === lang));
+    if (label) label.textContent = LANG_NAME[lang] || LANG_NAME.zh;
+    options.forEach(o => {
+      const on = o.dataset.lang === lang;
+      o.classList.toggle('active', on);
+      o.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  };
+  const setOpen = (open) => {
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   };
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    menu.hidden = !menu.hidden;
+    setOpen(menu.hidden);
+    if (!menu.hidden) {
+      const on = options.find(o => o.dataset.lang === I18NGetLang()) || options[0];
+      if (on) on.focus();
+    }
   });
-  $$('#lang-menu .lang-option').forEach(o => {
+  options.forEach(o => {
     o.addEventListener('click', (e) => {
       e.stopPropagation();
-      menu.hidden = true;
+      setOpen(false);
       if (o.dataset.lang && o.dataset.lang !== I18NGetLang()) setAppLang(o.dataset.lang);
+      btn.focus();
     });
   });
-  document.addEventListener('click', () => { if (!menu.hidden) menu.hidden = true; });
-  window.addEventListener('blur', () => { if (!menu.hidden) menu.hidden = true; });
+  // 面板内部（标题行、内边距）点击不算外部点击，不关闭
+  menu.addEventListener('click', (e) => { e.stopPropagation(); });
+  document.addEventListener('click', () => { if (!menu.hidden) setOpen(false); });
+  window.addEventListener('blur', () => { if (!menu.hidden) setOpen(false); });
+  document.addEventListener('keydown', (e) => {
+    if (menu.hidden) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      btn.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const idx = options.indexOf(document.activeElement);
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      const next = (idx + step + options.length) % options.length;
+      options[next].focus();
+      return;
+    }
+    if (e.key === 'Tab') setOpen(false);
+  });
   sync(I18NGetLang());
   I18NOnChange(sync);
 }
