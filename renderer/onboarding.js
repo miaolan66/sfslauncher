@@ -94,10 +94,12 @@
       ke: ['Close the game before installing', 'Uninstalling restores the original language setting'],
       note: '只要求打开窗口，不要求点「安装汉化」。',
       noteEn: 'Only opening the window is required; installing is not forced.',
-      target: '#added-game-list .game-card, .game-card',
+      target: '#added-game-list .game-card .game-name',
       act: '右键实例 → 汉化，打开窗口',
       acte: 'Right-click the instance → Chinese localization',
       view: 'games',
+      waitTarget: true,
+      onEnter: function () { try { if (window.renderGames) window.renderGames(); } catch (e) {} },
       advance: 'condition',
       check: function () { return dialogOpen('han-dialog'); },
       yieldWhen: function () { return dialogOpen('ctx-menu') || dialogOpen('han-dialog'); }
@@ -182,6 +184,7 @@
   let hanDone = false;
   let hanChecked = false;
   let lastSig = '';
+  let taskToken = 0;
 
   function isEn() { return window.I18NGetLang && window.I18NGetLang() === 'en'; }
   function L(zh, en) { return isEn() ? en : zh; }
@@ -345,9 +348,19 @@
     cardEl.style.width = cw + 'px';
     const ch = cardEl.offsetHeight;
     let leftPos = x2 + 18;
-    if (leftPos + cw > W - 16) leftPos = x1 - cw - 18;
-    if (leftPos < 16) leftPos = 16;
     let topPos = y1 - 6;
+    if (leftPos + cw <= W - 16) {
+      // 右侧放得下：优先贴右侧
+    } else if (x1 - cw - 18 >= 16) {
+      // 右侧放不下时改到左侧
+      leftPos = x1 - cw - 18;
+    } else {
+      // 目标过宽（整行卡片），左右都放不下时改到目标下方，避免盖住可右键区域
+      leftPos = Math.min(W - 16 - cw, Math.max(16, x1));
+      topPos = y2 + 16;
+      if (topPos + ch > H - 16) topPos = y1 - ch - 16;
+    }
+    if (leftPos < 16) leftPos = 16;
     if (topPos + ch > H - 16) topPos = H - ch - 16;
     if (topPos < 16) topPos = 16;
     cardEl.style.left = leftPos + 'px';
@@ -399,6 +412,10 @@
 
     cardEl.appendChild(mk('div', 'ob2-act', L(p.act, p.acte)));
 
+    const taskStrip = mk('div', 'ob2-taskstrip');
+    taskStrip.id = 'ob2-taskstrip';
+    cardEl.appendChild(taskStrip);
+
     const foot = mk('div', 'ob2-foot');
     foot.appendChild(mk('div', 'ob2-esc', L('必须完成这一步才会继续', 'Complete this step to continue')));
     foot.appendChild(mk('div', 'ob2-esc', 'Esc ' + L('跳过当前步', 'skips this step')));
@@ -406,9 +423,35 @@
 
     bindTarget(p);
     startStepPoll(p);
+    renderGuideTasks();
     guideEl.hidden = anyDialogOpen();
     schedulePlace();
     setTimeout(schedulePlace, 60);
+  }
+
+  async function renderGuideTasks() {
+    const el = document.getElementById('ob2-taskstrip');
+    if (!el || !guideRunning) return;
+    const tok = ++taskToken;
+    let st;
+    try { st = await readStates(); } catch (e) { return; }
+    if (tok !== taskToken || !guideRunning || !el.isConnected) return;
+    // 导览未结束时，“走完新手导览”这一项还不能算完成，避免重看引导时直接显示 4/4
+    st.guide = false;
+    const done = TASKS.filter(function (t) { return st[t.id]; }).length;
+    el.innerHTML = '';
+    const head = mk('div', 'ob2-taskstrip-head');
+    head.appendChild(mk('span', 'ob2-taskstrip-title', L('上手任务', 'Getting started')));
+    head.appendChild(mk('span', 'ob2-taskstrip-count', done + ' / ' + TASKS.length));
+    el.appendChild(head);
+    const list = mk('div', 'ob2-taskstrip-items');
+    TASKS.forEach(function (t) {
+      const item = mk('div', 'ob2-taskstrip-item' + (st[t.id] ? ' done' : ''));
+      item.appendChild(mk('span', 'ob2-taskstrip-dot', st[t.id] ? '✓' : ''));
+      item.appendChild(mk('span', 'ob2-taskstrip-label', L(t.zh, t.en)));
+      list.appendChild(item);
+    });
+    el.appendChild(list);
   }
 
   function advanceStep() {

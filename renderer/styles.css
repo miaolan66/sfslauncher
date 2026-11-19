@@ -1785,6 +1785,23 @@ body.glass.glass-liuli .sidebar .nav-item.active {
   background: var(--bg-3);
   font-size: 12px; line-height: 1.6; color: var(--text-dim);
 }
+.ob2-taskstrip {
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.ob2-taskstrip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.ob2-taskstrip-title { font-size: 11.5px; font-weight: 700; color: var(--text-dim); }
+.ob2-taskstrip-count { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.ob2-taskstrip-items { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.ob2-taskstrip-item { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11.5px; line-height: 1.5; color: var(--text-dim); }
+.ob2-taskstrip-item.done { color: var(--text); }
+.ob2-taskstrip-dot {
+  width: 14px; height: 14px; flex: 0 0 14px; border-radius: 50%;
+  border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--text-dim);
+}
+.ob2-taskstrip-item.done .ob2-taskstrip-dot { background: var(--accent); border-color: var(--accent); color: var(--ll-on-brand, #fff); }
+.ob2-taskstrip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ob2-keys { margin: 14px 0 0; padding-left: 18px; }
 .ob2-keys li { font-size: 12.5px; line-height: 1.7; color: var(--text-dim); }
 .ob2-act {
