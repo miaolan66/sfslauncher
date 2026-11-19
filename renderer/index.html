@@ -249,7 +249,7 @@
         <div class="dl-progress-panel" id="dl-progress-panel">
           <div class="dl-progress-header" id="dl-progress-header">
             <span data-i18n="store.downloadProgress">下载进度</span>
-            <span class="dl-toggle" id="dl-toggle">展开 ▾</span>
+            <span class="dl-toggle" id="dl-toggle" data-i18n="dl.expand">展开 ▾</span>
           </div>
           <div class="dl-progress-body" id="dl-progress-body" hidden>
             <div id="dl-progress-list">
@@ -280,7 +280,7 @@
           <input type="text" id="mod-search" class="mod-search-input" placeholder="搜索模组名称、作者、标签…" data-i18n-ph="store.searchPh" />
         </div>
 
-        <div id="modstore-grid" class="modstore-grid">
+        <div id="modstore-grid" class="modstore-grid" data-i18n-skip>
           <div class="empty-tip" id="modstore-loading" data-i18n="store.loading">正在加载模组列表…</div>
         </div>
       </section>
@@ -397,7 +397,10 @@
               <div class="panel-label" data-i18n="settings.onboarding">新手引导</div>
               <div class="panel-desc" data-i18n="settings.onboardingDesc">分步介绍各页面用途和常用操作，首次启动会自动播放</div>
             </div>
-            <button class="btn small ghost" id="btn-onboarding-replay" data-i18n="settings.replayOnboarding">重看引导</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn small ghost" id="btn-onboarding-replay" data-i18n="settings.replayOnboarding">重看引导</button>
+              <button class="btn small ghost" id="btn-onboarding-checklist" data-i18n="settings.showChecklist">查看任务清单</button>
+            </div>
           </div>
         </div>
 
@@ -749,21 +752,23 @@
     </div>
   </div>
 
-  <!-- 注入汉化：集成 SFSChineseInjector（作者 Arctic.，MIT，已获作者同意） -->
+  <!-- 汉化：启动器直接安装运行时 Mod + 词表 -->
   <div class="win-dialog-mask" id="han-dialog" hidden>
     <div class="win-dialog han-dialog">
-      <div class="win-dialog-title" data-i18n="han.title">注入汉化</div>
+      <div class="win-dialog-title" data-i18n="han.title">汉化</div>
       <div class="han-credit">by Arctic.　QQ 2450278139</div>
       <div class="win-dialog-body">
         <div class="han-line"><span class="han-k" data-i18n="han.dir">游戏目录</span><span class="han-v" id="han-dir">读取中…</span></div>
-        <div class="han-desc" data-i18n-html="han.body1"><b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\Custom Translations</code>，并把语言切到该词表。只多一个 txt，删掉即恢复英文。</div>
-        <div class="han-desc" data-i18n-html="han.body2"><b>DLL 汉化</b>：游戏运行时注入进程，把模组里的中英文统一成中文字体。不改 <code>Mods</code> 目录，不落盘。</div>
-        <div class="han-warn" data-i18n="han.warn">两个开关都在注入器界面里，由它自己控制，启动器不代管。注入属于进程注入，部分杀软会拦截；被拦截时游戏仍是英文。</div>
-        <div class="han-src"><span data-i18n="han.src">开源地址</span> <code>github.com/Arctic-Ice67/SFSChineseInjector</code></div>
+        <div class="han-line"><span class="han-k" data-i18n="han.state">当前状态</span><span class="han-v" id="han-status">读取中…</span></div>
+        <div class="han-desc" data-i18n-html="han.body1"><b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\Custom Translations</code>，并把游戏语言切到该词表。</div>
+        <div class="han-desc" data-i18n-html="han.body2"><b>运行时汉化</b>：把 <code>SFSHanRuntime</code> 和中文字体装进 <code>Mods</code>，游戏启动时由 Mod 加载器接管文本。</div>
+        <div class="han-warn" data-i18n="han.warn">安装或卸载前先完全退出游戏。运行时 Mod 是未签名 DLL，部分杀软会拦截；被拦截时游戏仍显示英文。</div>
+        <div class="han-src"><span data-i18n="han.src">来源</span> <code>github.com/Arctic-Ice67/SFSChineseInjector</code> · PolyForm Strict 1.0.0</div>
       </div>
       <div class="win-dialog-actions">
         <button class="win-btn" id="han-cancel" data-i18n="common.cancel">取消</button>
-        <button class="win-btn win-btn-primary" id="han-run" data-i18n="han.run">打开注入器</button>
+        <button class="win-btn" id="han-uninstall" data-i18n="han.uninstall" hidden>卸载汉化</button>
+        <button class="win-btn win-btn-primary" id="han-run" data-i18n="han.install">安装汉化</button>
       </div>
     </div>
   </div>
@@ -884,7 +889,7 @@
   <!-- 实例右键菜单（扁平、跟随主题） -->
   <div class="ctx-menu" id="ctx-menu" hidden></div>
 
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast-stack" id="toast-stack"></div>
   <div class="glass-mask" id="glass-mask"></div>
 
   <!-- 深浅切换过渡：太空视角日出（扁平黑白，地球用背景色遮住太阳下半部，太阳从地平线后升起） -->
@@ -916,6 +921,7 @@
   <script src="locales-zh.js"></script>
   <script src="locales-en.js"></script>
   <script src="locales-src-en.js"></script>
+  <script src="store-i18n-en.js"></script>
   <script src="idle-tasks.js"></script>
   <script src="assets/mcu.js"></script>
   <script src="app-theme.js"></script>

@@ -187,13 +187,21 @@ function esc(s) {
 }
 
 function toast(msg, ms = 2600) {
-  const t = $('#toast');
+  const stack = $('#toast-stack');
+  if (!stack) return;
   const text = String(msg == null ? '' : msg);
-  // 主进程返回的错误串也在映射表里，先翻一次，避免延迟到下一帧
-  t.textContent = window.I18NTrText ? window.I18NTrText(text) : text;
-  t.hidden = false;
-  clearTimeout(toast._tm);
-  toast._tm = setTimeout(() => { t.hidden = true; }, ms);
+  const item = document.createElement('div');
+  item.className = 'toast-item';
+  item.textContent = window.I18NTrText ? window.I18NTrText(text) : text;
+  stack.appendChild(item);
+  // 最多同时显示 4 条，超出从最早的开始移除，避免堆满屏幕
+  while (stack.children.length > 4) stack.firstElementChild.remove();
+  requestAnimationFrame(() => item.classList.add('show'));
+  const tm = setTimeout(() => {
+    item.classList.add('out');
+    setTimeout(() => { try { item.remove(); } catch (e) {} }, 200);
+  }, ms);
+  item.__tm = tm;
 }
 
 function showModal(title, bodyHtml) {
@@ -264,11 +272,23 @@ $$('.nav-item').forEach(item => {
     $$('.nav-item').forEach(n => n.classList.remove('active'));
     $$('.view').forEach(v => v.classList.remove('active'));
     item.classList.add('active');
-    $('#view-' + item.dataset.view).classList.add('active');
-    // 进入蓝图页时自动刷新文件夹树（只扫文件夹）
-    if (item.dataset.view === 'blueprint') renderBlueprintTree();
-    if (item.dataset.view === 'mods' && window.VirtInstalled) VirtInstalled.refresh(true);
-    if (item.dataset.view === 'modstore') loadModstore(); // 首次进入商店页就加载列表，不必点分类才出
+    const view = item.dataset.view;
+    $('#view-' + view).classList.add('active');
+    // 语言切换后第一次进入该页：先按新语言重绘，再走常规刷新
+    const wasDirty = langDirtyViews.has(view);
+    if (wasDirty) langDirtyViews.delete(view);
+    if (view === 'games') {
+      renderGames();
+    } else if (wasDirty) {
+      scheduleRerender(view);
+    } else {
+      // 进入蓝图页时自动刷新文件夹树（只扫文件夹）
+      if (view === 'blueprint') renderBlueprintTree();
+      if (view === 'mods' && window.VirtInstalled) VirtInstalled.refresh(true);
+      if (view === 'modstore') loadModstore(); // 首次进入商店页就加载列表，不必点分类才出
+      if (view === 'downloads') renderDownloads();
+      if (view === 'backups') renderBackups();
+    }
     // 隐藏页面中的胶囊滑块初始宽度为0，切换显示后统一重算
     refreshAllCapsules();
   });
@@ -302,6 +322,25 @@ function scheduleHeavyRenders() {
 }
 
 // ---- 多语言：左下角切换 + 切换后重绘动态列表 ----
+const langDirtyViews = new Set();
+function rerenderView(view) {
+  if (!view) return;
+  if (view === 'games') { renderGames(); return; }
+  if (view === 'mods') { if (window.VirtInstalled) VirtInstalled.refresh(true); else renderMods(); return; }
+  if (view === 'backups') { renderBackups(); return; }
+  if (view === 'blueprint') { renderBlueprintTree(); return; }
+  if (view === 'downloads') { renderDownloads(); return; }
+  if (view === 'modstore') { loadModstore(); return; }
+}
+function activeViewName() {
+  const v = document.querySelector('.view.active');
+  return v && v.id ? v.id.replace(/^view-/, '') : '';
+}
+function scheduleRerender(view) {
+  if (!view) return;
+  setTimeout(() => { try { rerenderView(view); } catch (e) {} }, 0);
+}
+
 function initLangSwitch() {
   const btn = $('#lang-btn');
   const menu = $('#lang-menu');
@@ -388,18 +427,29 @@ function pushNativeTexts() {
 function setAppLang(lang) {
   if (!I18NSetLang(lang)) return;
   state.cfg.lang = lang;
+  try { document.title = lang === 'en' ? 'SFS Launcher' : 'SFS 启动器'; } catch (e) {}
   try { window.launcher.configSave(state.cfg); } catch (e) {}
-  // 动态内容为拼接文案，切换后重跑一次渲染
-  try { renderGames(); } catch (e) {}
-  try { renderMods(); } catch (e) {}
-  try { renderBackups(); } catch (e) {}
-  try { renderBlueprintTree(); } catch (e) {}
-  try { renderDownloads(); } catch (e) {}
-  try { loadWorldStats(); } catch (e) {}
-  try { if ($('#view-modstore') && $('#view-modstore').classList.contains('active')) loadModstore(); } catch (e) {}
+
+  // 切换语言只同步当前页：静态节点由 I18NSetLang 处理，动态列表按需重绘。
+  // 其余页面标脏，等用户切过去再重绘，避免一次冻结 400ms。
+  const active = activeViewName();
+  langDirtyViews.clear();
+  ['games', 'mods', 'backups', 'blueprint', 'downloads', 'modstore'].forEach(v => {
+    if (v !== active) langDirtyViews.add(v);
+  });
+  try { if (active === 'games') renderGames(); } catch (e) {}
+  if (active === 'modstore') {
+    try { refreshModstoreLang(); } catch (e) {}
+  } else if (active) {
+    scheduleRerender(active);
+  }
   try { if (window.__lpSync) window.__lpSync(); } catch (e) {}
   try { window.Onboarding && Onboarding.refreshChecklist(); } catch (e) {}
   try { pushNativeTexts(); } catch (e) {}
+  try {
+    const tg = $('#dl-toggle');
+    if (tg) tg.textContent = dlPanelCollapsed ? msL('展开 ▾', 'Expand ▾') : msL('收起 ▴', 'Collapse ▴');
+  } catch (e) {}
 }
 
 // ---- 配置加载 ----
@@ -408,6 +458,7 @@ async function init() {
   state.cfg = await window.launcher.configLoad();
   // 语言：优先上次选择，首次默认中文
   try { I18NSetLang(state.cfg.lang === 'en' ? 'en' : 'zh'); } catch (e) {}
+  try { document.title = state.cfg.lang === 'en' ? 'SFS Launcher' : 'SFS 启动器'; } catch (e) {}
   // 防御：确保关键字段存在，避免空值导致渲染中断
   if (!Array.isArray(state.cfg.instances)) state.cfg.instances = [];
   if (!state.cfg.mods || typeof state.cfg.mods !== 'object') state.cfg.mods = { pending: [], installed: [] };
@@ -532,7 +583,7 @@ async function init() {
     if (dlPanelCollapsed) {
       dlPanelCollapsed = false;
       const body = $('#dl-progress-body'); if (body) body.hidden = false;
-      const tg = $('#dl-toggle'); if (tg) tg.textContent = '收起 ▴';
+      const tg = $('#dl-toggle'); if (tg) tg.textContent = msL('收起 ▴', 'Collapse ▴');
     }
     // 拉全部任务列表刷新顶部面板；超过3个自动跳下载队列页
     window.launcher.downloadList().then(tasks => {
@@ -757,7 +808,7 @@ function renderGames() {
         } }
       ];
       if (inst.exePath) items.push({ label: '定位游戏程序 (.exe)', onClick: async () => { const r = await window.launcher.shellShowItem(inst.exePath); if (r && !r.success) toast(r.error || '定位失败'); } });
-      items.push({ label: '注入汉化', onClick: () => openHanDialog(inst) });
+      items.push({ label: '汉化', onClick: () => openHanDialog(inst) });
       items.push({ label: '移除该实例', danger: true, onClick: async () => {
         const ok = await appConfirm({ title: '移除游戏实例', body: '确认从启动器移除「' + inst.name + '」？\n仅移除启动器记录，不会删除游戏文件。', okText: '移除', danger: true });
         if (!ok) return;
@@ -1195,6 +1246,16 @@ async function confirmInstall() {
     toast('仅允许添加 Spaceflight Simulator 游戏');
     return;
   }
+  const sameName = (state.cfg.instances || []).some(i => String(i.name || '').trim().toLowerCase() === name.trim().toLowerCase());
+  if (sameName) {
+    toast('已有同名实例，请换一个名称');
+    return;
+  }
+  // 同名实例直接拦下：列表里出现两个同名卡片会让模组归属和「当前实例」无法分辨。
+  if ((state.cfg.instances || []).some(i => String(i.name || '').trim().toLowerCase() === name.toLowerCase())) {
+    toast('同名实例已存在，请换一个名称');
+    return;
+  }
 
   // 弹出添加方式选择
   showAddMethodDialog(name, p, async (method) => {
@@ -1254,37 +1315,62 @@ async function renderMods() {
   }
 
   const pBox = $('#pending-list');
-  if (!data.pending.length) {
-    pBox.innerHTML = `<div class="empty-tip"><div>暂无待导入文件</div><div class="empty-sub">在模组商店下载的 ZIP 会列入此处，确认类型后点击「导入」部署</div></div>`;
-  } else {
-    pBox.innerHTML = data.pending.map(p => `
+  const realPending = data.pending || [];
+  // 教程的示例项只存在于 DOM：下载和导入都不写配置、不碰游戏目录。
+  const fakePending = window.Onboarding && window.Onboarding.getFakePending ? window.Onboarding.getFakePending() : null;
+  const fakeRow = fakePending ? `
+    <div class="mod-item" data-tut-fake="1">
+      <span class="mod-type ${esc(fakePending.type)}">示例</span>
+      <span class="mod-name">${esc(fakePending.name)}（示例数据，不会写入游戏目录）</span>
+      <button class="btn small primary" data-tut-fake-import>导入</button>
+    </div>` : '';
+  const realRows = realPending.map(p => `
       <div class="mod-item">
         <span class="mod-type ${esc(p.type)}">${TYPE_LABEL[p.type] || p.type}</span>
         <span class="mod-name">${esc(p.name)}</span>
         <button class="btn small primary" data-pimp="${esc(p.path)}" data-ptype="${esc(p.type)}">导入</button>
         <button class="btn small danger" data-pdel="${esc(p.path)}">移除</button>
       </div>`).join('');
-    pBox.querySelectorAll('[data-pimp]').forEach(b => b.addEventListener('click', async () => {
-      // 从商店缓存按名称匹配版本号，写入已装记录以便后续更新检测
-      let ver = '';
-      if (modstoreCache) {
-        const pItem = data.pending.find(p => p.path === b.dataset.pimp);
-        const pn = normName(pItem && pItem.name);
-        const hit = modstoreCache.find(x => {
-          const xn = normName(x.name);
-          return xn && pn && (xn.includes(pn) || pn.includes(xn));
-        });
-        if (hit && hit.version) ver = hit.version;
-      }
-      const r = await window.launcher.modDeploy(b.dataset.pimp, b.dataset.ptype, ver);
-      toast(r.success ? r.summary : ('导入失败：' + r.error));
-      renderMods();
-    }));
-    pBox.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => {
-      state.cfg.mods.pending = await window.launcher.modRemovePending(b.dataset.pdel);
-      renderMods();
-    }));
+  if (fakePending) {
+    pBox.innerHTML = fakeRow + realRows;
+  } else if (!realPending.length) {
+    pBox.innerHTML = `<div class="empty-tip"><div>暂无待导入文件</div><div class="empty-sub">在模组商店下载的 ZIP 会列入此处，确认类型后点击「导入」部署</div></div>`;
+  } else {
+    pBox.innerHTML = realRows;
   }
+
+  const fakeBtn = pBox.querySelector('[data-tut-fake-import]');
+  if (fakeBtn) fakeBtn.addEventListener('click', () => {
+    const fp = window.Onboarding && window.Onboarding.getFakePending ? window.Onboarding.getFakePending() : null;
+    try { toast('示例导入完成：' + (fp ? fp.name : 'Demo Parts.pack') + '（演示数据，未下载、未写入游戏目录）', 4600); } catch (e) {}
+    if (state.cfg) {
+      state.cfg.tutorialModDone = true;
+      try { window.launcher.configSave(state.cfg); } catch (e) {}
+    }
+    if (window.Onboarding && window.Onboarding.clearFakePending) window.Onboarding.clearFakePending();
+    renderMods();
+  });
+
+  pBox.querySelectorAll('[data-pimp]').forEach(b => b.addEventListener('click', async () => {
+    // 从商店缓存按名称匹配版本号，写入已装记录以便后续更新检测
+    let ver = '';
+    if (modstoreCache) {
+      const pItem = realPending.find(p => p.path === b.dataset.pimp);
+      const pn = normName(pItem && pItem.name);
+      const hit = modstoreCache.find(x => {
+        const xn = normName(x.name);
+        return xn && pn && (xn.includes(pn) || pn.includes(xn));
+      });
+      if (hit && hit.version) ver = hit.version;
+    }
+    const r = await window.launcher.modDeploy(b.dataset.pimp, b.dataset.ptype, ver);
+    toast(r.success ? r.summary : ('导入失败：' + r.error));
+    renderMods();
+  }));
+  pBox.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => {
+    state.cfg.mods.pending = await window.launcher.modRemovePending(b.dataset.pdel);
+    renderMods();
+  }));
 
   // 已装列表：按类型胶囊过滤
   const filtered = state_modFilter === 'all' ? installed : installed.filter(m => m.type === state_modFilter);
@@ -1644,6 +1730,10 @@ $('#autogame-toggle').addEventListener('change', async (e) => {
 // 设置页「重看引导」：随时可以重播新手引导
 $('#btn-onboarding-replay') && $('#btn-onboarding-replay').addEventListener('click', () => {
   try { window.Onboarding && Onboarding.replay(state.cfg); } catch (e) { console.warn('onboarding replay failed:', e); }
+});
+// 设置页「查看任务清单」：清单被隐藏或已完成后仍可随时打开
+$('#btn-onboarding-checklist') && $('#btn-onboarding-checklist').addEventListener('click', () => {
+  try { window.Onboarding && Onboarding.showChecklist(); } catch (e) { console.warn('show checklist failed:', e); }
 });
 $('#btn-proxy-save').addEventListener('click', async () => {
   const v = $('#proxy-input').value.trim();
@@ -2035,33 +2125,62 @@ $('#crash-author').addEventListener('click', () => {
 });
 $('#author-close').addEventListener('click', () => hideDlg('author-dialog'));
 
-// ---- 注入汉化（集成 SFSChineseInjector，作者 Arctic.）----
-// 汉化的注入引擎在那个单文件 exe 里，启动器只负责入口、目录回填和说明。
+// ---- 汉化：启动器直接安装运行时 Mod + 词表（不再拉起外部注入器）----
 let hanInstId = null;
+function hanMsg(zh, en) { return (window.I18NGetLang && window.I18NGetLang() === 'en') ? en : zh; }
+async function refreshHanStatus() {
+  const dirEl = $('#han-dir');
+  const statusEl = $('#han-status');
+  const installBtn = $('#han-run');
+  const uninstallBtn = $('#han-uninstall');
+  try {
+    const info = await window.launcher.hanStatus(hanInstId);
+    if (dirEl) dirEl.textContent = (info && info.gameDir) ? info.gameDir : hanMsg('未检测到游戏目录', 'No game folder detected');
+    let text = '';
+    if (!info || !info.valid) text = hanMsg('未检测到有效的游戏目录', 'No valid game folder');
+    else if (info.running) text = hanMsg('游戏正在运行，请先退出', 'Game is running — close it first');
+    else if (info.installed) {
+      const parts = [];
+      if (info.translationReady) parts.push(hanMsg('本体词表', 'base translation'));
+      if (info.runtimeReady) parts.push(hanMsg('运行时 Mod', 'runtime mod'));
+      text = hanMsg('已安装', 'Installed') + (parts.length ? '（' + parts.join(' + ') + '）' : '');
+    } else text = hanMsg('未安装', 'Not installed');
+    if (statusEl) statusEl.textContent = text;
+    if (installBtn) {
+      installBtn.disabled = !!(info && info.running);
+      installBtn.textContent = info && info.installed ? hanMsg('重新安装', 'Reinstall') : hanMsg('安装汉化', 'Install');
+    }
+    if (uninstallBtn) uninstallBtn.hidden = !(info && info.installed);
+  } catch (e) {
+    if (dirEl) dirEl.textContent = hanMsg('读取失败', 'Failed to read');
+  }
+}
 async function openHanDialog(inst) {
   hanInstId = inst && inst.id ? inst.id : null;
   const dirEl = $('#han-dir');
-  if (dirEl) dirEl.textContent = '读取中…';
+  if (dirEl) dirEl.textContent = hanMsg('读取中…', 'Reading…');
   showDlg('han-dialog');
-  try {
-    const info = await window.launcher.hanInfo();
-    if (dirEl) dirEl.textContent = (info && info.gameDir) ? info.gameDir : '未检测到游戏目录，请在注入器里选择';
-    if (!info || !info.success) toast('注入器未随包分发，该功能当前不可用');
-  } catch (e) {
-    if (dirEl) dirEl.textContent = '读取失败';
-  }
+  await refreshHanStatus();
 }
 $('#han-cancel').addEventListener('click', () => hideDlg('han-dialog'));
 $('#han-run').addEventListener('click', async () => {
-  const r = await window.launcher.hanOpen(hanInstId);
-  hideDlg('han-dialog');
+  const btn = $('#han-run');
+  if (btn) btn.disabled = true;
+  const r = await window.launcher.hanInstall(hanInstId);
   if (r && r.success) {
-    // 教程清单按"打开过注入器"判定，注入结果启动器无法确认
     state.cfg.hanOpened = true;
     try { window.launcher.configSave(state.cfg); } catch (e) {}
     try { window.Onboarding && Onboarding.refreshChecklist(); } catch (e) {}
-    toast('已启动汉化注入器，在它里面打开两个开关再点「开始游戏」');
-  } else toast((r && r.error) || '启动失败');
+    toast(hanMsg('汉化已安装，重新启动游戏生效', 'Chinese pack installed — restart the game'));
+  } else toast((r && r.error) || hanMsg('安装失败', 'Install failed'));
+  await refreshHanStatus();
+});
+$('#han-uninstall').addEventListener('click', async () => {
+  const ok = window.confirm(hanMsg('卸载会恢复游戏原语言设置并删除汉化文件，继续？', 'Uninstall restores the original language and removes the Chinese files. Continue?'));
+  if (!ok) return;
+  const r = await window.launcher.hanUninstall(hanInstId);
+  toast(r && r.success ? hanMsg('汉化已卸载', 'Chinese pack removed') : ((r && r.error) || hanMsg('卸载失败', 'Uninstall failed')));
+  await refreshHanStatus();
 });
 
 // ---- 下载队列 ----
@@ -2100,7 +2219,6 @@ $('#btn-dl-clear').addEventListener('click', async () => {
   await window.launcher.downloadClearDone();
   renderDownloads();
 });
-document.querySelector('.nav-item[data-view="downloads"]').addEventListener('click', renderDownloads);
 // 进度/完成实时刷新队列页
 window.launcher.onDownloadProgress(() => {
   if ($('#view-downloads') && $('#view-downloads').classList.contains('active')) renderDownloads();
@@ -2119,31 +2237,185 @@ let modstoreFilter = { category: 'all', search: '' };
 // 注意：category 是“内容分类”（功能/引擎/娱乐/涂装/DLL），与 installType（安装方式 parts/textures/dll）是两套字段，不能混用。
 const MS_CAT_TO_API = { parts: 'function', engine: 'engine', entertainment: 'entertain', skin: 'skin', dll: 'dll' };
 const MS_CAT_LABEL = { function: '功能', engine: '引擎', entertain: '娱乐', skin: '涂装', dll: 'DLL', parts: '部件', textures: '涂装', texture: '涂装', blueprint: '蓝图' };
+const MS_CAT_LABEL_EN = { function: 'Functional', engine: 'Engines', entertain: 'Fun', skin: 'Skins', dll: 'DLL', parts: 'Parts', textures: 'Textures', texture: 'Textures', blueprint: 'Blueprints' };
 // 模组内容分类中文名（优先 category，缺失时退回 installType）
 function msCategoryLabel(m) {
   const c = m.category || m.installType || '';
-  return MS_CAT_LABEL[c] || c || '模组';
+  const en = window.I18NGetLang && window.I18NGetLang() === 'en';
+  return (en ? MS_CAT_LABEL_EN[c] : MS_CAT_LABEL[c]) || c || (en ? 'Mod' : '模组');
 }
 
-function normName(n) { return (n || '').toLowerCase().replace(/\.(zip|pack|dll)$/i, '').replace(/[\s\-_（）()【】\[\]]+/g, ''); }
+function normName(n) {
+  return (n || '').toLowerCase()
+    .replace(/\.(zip|pack|dll)$/i, '')
+    .replace(/^cn-/, '')
+    .replace(/-cn$/, '')
+    .replace(/\bcn\b/g, '')
+    .replace(/\bv\d+(?:\.\d+)*\b/g, '')
+    .replace(/[（(]?(?:汉化|修复|完成)[）)]?/g, '')
+    .replace(/[\s\-_（）()【】\[\],.]+/g, '');
+}
+// 安装文件名常带「(蓝图)」「_x64」「v1.2」，商店标题是短名。
+// 用完整别名（主名、括号内类型、去版本/去 x64）做相等比较，不做任意子串包含。
+function installedAliases(name) {
+  const raw = repairStoreText(name).replace(/\.(zip|pack|dll)$/i, '').trim();
+  const aliases = [];
+  const add = s => {
+    const n = normName(s);
+    if (n && !aliases.includes(n)) aliases.push(n);
+  };
+  add(raw);
+  add(raw.replace(/[（(][^）)]*[）)]/g, ''));
+  const paren = raw.match(/[（(]([^）)]*)[）)]/);
+  if (paren) add(paren[1]);
+  add(raw.replace(/[（(][^）)]*[）)]/g, '').trim().replace(/[_ -]?(?:x)?64$/i, ''));
+  return aliases;
+}
 
-// 检查模组是否已安装 / 是否有更新（按名称模糊匹配）
-function modInstallStatus(m) {
+// 商店只应统计「当前实例」的已装模组；配置里同时存着 E:\1.6\sfs 与 E:\1.6\sfs1.6 的记录。
+function currentInstanceBase() {
+  try {
+    const arr = (state.cfg && state.cfg.instances) || [];
+    const inst = arr.find(i => i.current) || arr[0];
+    if (!inst) return '';
+    const p = inst.installDir || (inst.exePath ? String(inst.exePath).replace(/[\\/][^\\/]+$/, '') : '');
+    return String(p || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase();
+  } catch (e) { return ''; }
+}
+function installedInCurrent(it, base) {
+  if (!base) return true;
+  const paths = [];
+  if (it && it.target) paths.push(it.target);
+  if (it && Array.isArray(it.files)) paths.push(...it.files);
+  if (!paths.length) return true;
+  return paths.some(p => {
+    const s = String(p || '').replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase();
+    if (!/^[a-z]:\\/.test(s)) return true; // 相对路径默认属于当前实例
+    return s === base || s.startsWith(base + '\\');
+  });
+}
+
+// 已装列表在商店渲染时会被每张卡片反复遍历；归一化一次并缓存，避免 116×265 次正则。
+let __msInstCacheRef = null, __msInstCacheLen = -1, __msInstCacheBase = '', __msInstCache = [];
+function installedIndex() {
   const inst = (state.cfg && state.cfg.mods && state.cfg.mods.installed) || [];
+  const base = currentInstanceBase();
+  if (__msInstCacheRef !== inst || __msInstCacheLen !== inst.length || __msInstCacheBase !== base) {
+    __msInstCacheRef = inst;
+    __msInstCacheLen = inst.length;
+    __msInstCacheBase = base;
+    __msInstCache = inst
+      .filter(it => it.type !== 'blueprint')
+      .filter(it => installedInCurrent(it, base))
+      .map(it => ({
+        aliases: installedAliases(it.name),
+        version: it.version || '',
+        name: it.name || ''
+      }))
+      .filter(it => it.aliases.length)
+      .sort((a, b) => (b.aliases[0] || '').length - (a.aliases[0] || '').length);
+  }
+  return __msInstCache;
+}
+// 检查模组是否已安装 / 是否有更新（短标题与安装文件名的完整别名相等才命中；
+// 不再用 it.norm.includes(target)，避免 PAAEP 命中 AEP、商店条目命中 1.pack）
+function modInstallStatus(m) {
   const target = normName(m.name);
-  for (const it of inst) {
-    const iname = normName(it.name);
-    if (iname && (iname.includes(target) || target.includes(iname)) && target.length >= 2) {
-      // 已安装；若商店版本号更新则提示可更新
-      if (m.version && it.version && m.version !== it.version) return { installed: true, updatable: true, ver: it.version };
-      return { installed: true, updatable: false };
-    }
+  if (!target) return { installed: false, updatable: false };
+  for (const it of installedIndex()) {
+    if (!it.aliases.includes(target)) continue;
+    // 已安装；若商店版本号更新则提示可更新
+    if (m.version && it.version && m.version !== it.version) return { installed: true, updatable: true, ver: it.version };
+    return { installed: true, updatable: false };
   }
   return { installed: false, updatable: false };
 }
 
 function msSpinner() {
-  return '<div class="ms-loading"><div class="ms-spinner"></div><span>正在加载模组列表…</span></div>';
+  const en = window.I18NGetLang && window.I18NGetLang() === 'en';
+  return '<div class="ms-loading"><div class="ms-spinner"></div><span>' + (en ? 'Loading mod list…' : '正在加载模组列表…') + '</span></div>';
+}
+
+// 商店数据里有 4 处 U+FFFD（站点源数据损坏），显示前按上下文修复。
+function repairStoreText(s) {
+  return String(s == null ? '' : s)
+    .replace(/天空\uFFFD+船/g, '天空之船')
+    .replace(/固态助\uFFFD+器/g, '固态助推器')
+    .replace(/阿波罗\uFFFD+月计划/g, '阿波罗登月计划')
+    .replace(/零\uFFFD+/g, '零件');
+}
+// 商店条目名常带版本号和「汉化/修复」后缀，对照表按基础名收录；
+// 匹配时先查原文，再逐级去掉后缀，找不到才回退原文，不臆造翻译。
+function storeEnEntry(rawName) {
+  const table = window.STORE_I18N_EN || {};
+  const s = repairStoreText(rawName).trim();
+  if (!s) return null;
+  if (table[s]) return table[s];
+  const trimmed = s
+    .replace(/\s+v[\d.]+(?:\s+(?:汉化|修复|完成))*$/i, '')
+    .replace(/\s+(?:汉化|修复|完成)$/g, '')
+    .trim();
+  if (trimmed && table[trimmed]) return table[trimmed];
+  return null;
+}
+function storeLoc(m) {
+  const name = repairStoreText(m && m.name);
+  const desc = repairStoreText(m && m.desc);
+  if (!(window.I18NGetLang && window.I18NGetLang() === 'en')) return { name, desc };
+  const e = storeEnEntry(m && m.name);
+  return { name: (e && e.n) || name, desc: (e && e.d) || desc };
+}
+function msL(zh, en) { return (window.I18NGetLang && window.I18NGetLang() === 'en') ? en : zh; }
+// 商店字段值是站点原始中文（如「未知」「全版本」），英文界面下统一换算
+const STORE_VAL_EN = { '未知': 'Unknown', '全版本': 'All versions', '无': 'None', '暂无': 'None', '不兼容': 'Incompatible', '免费': 'Free' };
+// 作者名是数据里的中文 ID，英文界面按常用写法换；未收录的保留原 ID，不强行音译。
+const STORE_AUTHOR_EN = {
+  'SFS凤PC探索星辰': 'SFS Feng PC Starseeker',
+  'sfs凤PC探索星辰': 'sfs Feng PC Starseeker',
+  '天冲': 'Tian Chong',
+  '飞掠地平线工作室': 'Flyby Horizon Studio',
+  '星辰太空 (SFS凤PC探索星辰)': 'Star Space (SFS Feng PC Starseeker)',
+  '星辰太空（SFS凤PC探索星辰）': 'Star Space (SFS Feng PC Starseeker)'
+};
+function storeVal(v) {
+  const s = String(v == null ? '' : v);
+  if (!(window.I18NGetLang && window.I18NGetLang() === 'en')) return s;
+  return STORE_AUTHOR_EN[s] || STORE_AUTHOR_EN[s.trim()] || STORE_VAL_EN[s] || s;
+}
+// 版本字段里夹着「汉化/修复/完成」等中文后缀；英文界面只保留版本号本身。
+function storeVersion(v) {
+  const s = repairStoreText(v).trim();
+  if (!(window.I18NGetLang && window.I18NGetLang() === 'en')) return s;
+  return s.replace(/\s*(?:汉化|修复|完成|修正)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function storeTag(t) {
+  const raw = repairStoreText(t);
+  if (!(window.I18NGetLang && window.I18NGetLang() === 'en')) return raw;
+  return (window.STORE_TAG_EN && window.STORE_TAG_EN[raw]) || raw;
+}
+// 商店 JSON 是第三方数据，图片地址只接受 http(s)，并做属性转义，避免 " onerror= 注入。
+function safeImgUrl(u) {
+  const s = String(u == null ? '' : u).trim();
+  return /^https?:\/\//i.test(s) ? s : '';
+}
+
+// 只切换可见性，不重建卡片；输入搜索词时不会重新加载 116 张图片。
+function applyModstoreFilter() {
+  const grid = $('#modstore-grid');
+  if (!grid) return;
+  const cat = modstoreFilter.category || 'all';
+  const want = cat === 'all' ? '' : (MS_CAT_TO_API[cat] || cat);
+  const q = (modstoreFilter.search || '').toLowerCase();
+  let visible = 0;
+  grid.querySelectorAll('.ms-card').forEach(card => {
+    const okCat = !want || card.dataset.mscat === want;
+    const okQ = !q || (card.dataset.search || '').includes(q);
+    const show = okCat && okQ;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const empty = $('#ms-empty');
+  if (empty) empty.style.display = visible ? 'none' : '';
 }
 
 async function loadModstore() {
@@ -2166,31 +2438,13 @@ async function loadModstore() {
       mods = Array.isArray(raw) ? raw : ((raw && (raw.files || raw.mods || raw.list)) || []);
       modstoreCache = mods;
     }
-    if (!mods || !mods.length) { grid.innerHTML = '<div class="empty-tip">暂无模组</div>'; return; }
+    if (!mods || !mods.length) { grid.innerHTML = '<div class="empty-tip">' + msL('暂无模组', 'No mods available') + '</div>'; return; }
 
-    // 分类 + 搜索过滤
-    let filtered = mods;
-    if (modstoreFilter.category !== 'all') {
-      // 按内容分类 category 过滤；API 缺失 category 时用 installType 兜底
-      const want = MS_CAT_TO_API[modstoreFilter.category] || modstoreFilter.category;
-      filtered = filtered.filter(m => (m.category || m.installType) === want);
-    }
-    if (modstoreFilter.search) {
-      const q = modstoreFilter.search.toLowerCase();
-      filtered = filtered.filter(m =>
-        (m.name || '').toLowerCase().includes(q) ||
-        (m.author || '').toLowerCase().includes(q) ||
-        (m.tags || []).some(t => t.toLowerCase().includes(q))
-      );
-    }
-
-    if (!filtered.length) {
-      grid.innerHTML = '<div class="empty-tip">没有匹配的模组<br><span style="font-size:12px;color:var(--text-dim)">试试切换分类或修改搜索关键词</span></div>';
-      return;
-    }
-
-    grid.innerHTML = filtered.map((m) => {
-      const realIdx = mods.indexOf(m); // 保留原始索引用于事件绑定
+    // 分类 + 搜索改为切换卡片可见性：116 张卡片只建一次，输入每个字不再重建整片 DOM。
+    // 旧实现每次 input 都 innerHTML 重绘，连图片一起重新解码，是商店卡顿的主因。
+    const list = mods;
+    grid.innerHTML = list.map((m, realIdx) => {
+      const L = storeLoc(m);
       // 热度是站点数据（形如 6.7万）：英文模式换成 67k，避免英文界面残留中文单位
       const heatText = (function () {
         const h = m.heat || '';
@@ -2201,40 +2455,46 @@ async function loadModstore() {
         return (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
       })();
       const imgs = (m.images || []);
-      const img = imgs[0] || '';
-      const tags = (m.tags || []).map(t => `<span class="ms-tag">${esc(t)}</span>`).join('');
+      const img = safeImgUrl(imgs[0]);
+      const tags = (m.tags || []).map(t => `<span class="ms-tag">${esc(storeTag(t))}</span>`).join('');
       const dl = m.installUrl || m.link || '';
       const canDl = /^https?:/i.test(dl) && !/^暂/i.test(dl);
       const st = modInstallStatus(m);
       const badge = st.updatable
-        ? '<span class="ms-badge update">可更新 ' + esc(m.version || '') + '</span>'
-        : st.installed ? '<span class="ms-badge installed">已安装</span>' : '';
+        ? '<span class="ms-badge update">' + msL('可更新', 'Update') + ' ' + esc(storeVersion(m.version) || '') + '</span>'
+        : st.installed ? '<span class="ms-badge installed">' + msL('已安装', 'Installed') + '</span>' : '';
       const gallery = imgs.length > 1
-        ? '<div class="ms-thumbs">' + imgs.slice(1, 4).map(u => `<img src="${u}" loading="lazy" onerror="this.style.display='none'"/>`).join('') + '</div>'
+        ? '<div class="ms-thumbs">' + imgs.slice(1, 4).map(u => {
+          const su = safeImgUrl(u);
+          return su ? `<img src="${esc(su)}" loading="lazy" onerror="this.style.display='none'"/>` : '';
+        }).join('') + '</div>'
         : '';
       const typeLabel = msCategoryLabel(m);
-      return `<div class="ms-card">
+      const msCat = m.category || m.installType || '';
+      const searchKey = [L.name, L.desc, storeVal(m.author), m.author, (m.tags || []).map(storeTag).join(' ')].join(' ').toLowerCase();
+      const colon = msL('：', ': ');
+      return `<div class="ms-card" data-ms-idx="${realIdx}" data-ms-updatable="${st.updatable ? 1 : 0}" data-ms-installed="${st.installed ? 1 : 0}" data-mscat="${esc(msCat)}" data-search="${esc(searchKey)}">
         <div class="ms-img-wrap">
-          ${img ? `<img class="ms-img" src="${img}" loading="lazy" onerror="this.style.display='none'"/>` : `<div class="ms-img ms-img-ph">SFS</div>`}
+          ${img ? `<img class="ms-img" src="${esc(img)}" loading="lazy" onerror="this.style.display='none'"/>` : `<div class="ms-img ms-img-ph">SFS</div>`}
           <span class="ms-type-badge">${esc(typeLabel)}</span>
           ${badge}
         </div>
         <div class="ms-body">
-          <div class="ms-name">${esc(m.name || '未命名')} ${m.version ? '<span class="ms-ver">' + esc(m.version) + '</span>' : ''}</div>
-          <div class="ms-desc">${esc(m.desc || '')}</div>
+          <div class="ms-name">${esc(L.name || msL('未命名', 'Untitled'))} ${storeVersion(m.version) ? '<span class="ms-ver">' + esc(storeVersion(m.version)) + '</span>' : ''}</div>
+          <div class="ms-desc">${esc(L.desc || '')}</div>
           ${gallery}
           <div class="ms-meta">
-            <span>作者：${esc(m.author || '匿名')}</span>
-            <span>大小：${esc(m.size || '未知')}</span>
-            ${m.compat ? `<span class="ms-compat">兼容：${esc(m.compat)}</span>` : ''}
-            ${m.date ? `<span>更新：${esc(m.date)}</span>` : ''}
-            ${heatText ? `<span>热度：${esc(heatText)}</span>` : ''}
-            ${m.type ? `<span>格式：${esc(m.type)}</span>` : ''}
+            <span>${msL('作者', 'Author')}${colon}${esc(storeVal(m.author) || msL('匿名', 'Anonymous'))}</span>
+            <span>${msL('大小', 'Size')}${colon}${esc(storeVal(m.size) || msL('未知', 'Unknown'))}</span>
+            ${m.compat ? `<span class="ms-compat">${msL('兼容', 'Compatible')}${colon}${esc(storeVal(m.compat))}</span>` : ''}
+            ${m.date ? `<span>${msL('更新', 'Updated')}${colon}${esc(m.date)}</span>` : ''}
+            ${heatText ? `<span>${msL('热度', 'Popularity')}${colon}${esc(heatText)}</span>` : ''}
+            ${m.type ? `<span>${msL('格式', 'Format')}${colon}${esc(m.type)}</span>` : ''}
           </div>
           <div class="ms-tags">${tags}</div>
           <div class="ms-actions">
-            ${canDl ? `<button class="btn small ${st.updatable ? 'primary' : ''}" data-ms-dl="${realIdx}">${st.updatable ? '更新' : (st.installed ? '重新下载' : '下载')}</button>` : ''}
-            <button class="btn small ghost" data-ms-detail="${realIdx}">详情</button>
+            ${canDl ? `<button class="btn small ${st.updatable ? 'primary' : ''}" data-ms-dl="${realIdx}">${st.updatable ? msL('更新', 'Update') : (st.installed ? msL('重新下载', 'Redownload') : msL('下载', 'Download'))}</button>` : ''}
+            <button class="btn small ghost" data-ms-detail="${realIdx}">${msL('详情', 'Details')}</button>
           </div>
         </div>
       </div>`;
@@ -2242,8 +2502,9 @@ async function loadModstore() {
     grid.querySelectorAll('[data-ms-dl]').forEach(b => b.addEventListener('click', async () => {
       const m = mods[Number(b.dataset.msDl)];
       if (m.installUrl) {
+        const L = storeLoc(m);
         await window.launcher.modDownloadURL(m.installUrl);
-        toast('已开始下载：' + (m.name || '') + '。可在「下载队列」查看进度，完成后到「模组」页导入');
+        toast(msL('已开始下载：', 'Download started: ') + (L.name || '') + msL('。可在「下载队列」查看进度，完成后到「模组」页导入', '. Check Downloads for progress, then import it on the Mods page'));
       }
     }));
     // 详情按钮
@@ -2251,27 +2512,111 @@ async function loadModstore() {
       const m = mods[Number(b.dataset.msDetail)];
       showModDetail(m);
     }));
+    grid.insertAdjacentHTML('beforeend',
+      '<div id="ms-empty" class="empty-tip" style="grid-column:1/-1;display:none">' + msL('没有匹配的模组', 'No matching mods') +
+      '<br><span style="font-size:12px;color:var(--text-dim)">' + msL('试试切换分类或修改搜索关键词', 'Try another category or search term') + '</span></div>');
+    applyModstoreFilter();
   } catch (e) {
-    grid.innerHTML = '<div class="empty-tip">加载失败：' + esc(e.message) + '<br><button class="btn small ghost" id="ms-retry">重试</button></div>';
+    grid.innerHTML = '<div class="empty-tip">' + msL('加载失败：', 'Load failed: ') + esc(e.message) + '<br><button class="btn small ghost" id="ms-retry">' + msL('重试', 'Retry') + '</button></div>';
     const rb = $('#ms-retry'); if (rb) rb.addEventListener('click', () => loadModstore());
   }
 }
 
+// 语言切换时只更新卡片文字，不重写 innerHTML：116 张卡片的图片不会重新解码，
+// 这是英文模式切语言仍然“卡一下”的主要原因。
+let __msLangToken = 0;
+function refreshModstoreLang() {
+  const grid = $('#modstore-grid');
+  const mods = modstoreCache;
+  if (!grid || !Array.isArray(mods) || !mods.length) return;
+  const en = !!(window.I18NGetLang && window.I18NGetLang() === 'en');
+  const cards = Array.from(grid.querySelectorAll('.ms-card'));
+  const token = ++__msLangToken;
+  let idx = 0;
+
+  const updateCard = (card) => {
+    const i = Number(card.dataset.msIdx);
+    const m = mods[i];
+    if (!m) return;
+    const L = storeLoc(m);
+    const nameEl = card.querySelector('.ms-name');
+    if (nameEl) nameEl.innerHTML = esc(L.name || msL('未命名', 'Untitled')) + (storeVersion(m.version) ? ' <span class="ms-ver">' + esc(storeVersion(m.version)) + '</span>' : '');
+    const descEl = card.querySelector('.ms-desc');
+    if (descEl) descEl.textContent = L.desc || '';
+    const typeEl = card.querySelector('.ms-type-badge');
+    if (typeEl) typeEl.textContent = msCategoryLabel(m);
+    const st = {
+      updatable: card.dataset.msUpdatable === '1',
+      installed: card.dataset.msInstalled === '1'
+    };
+    const badge = card.querySelector('.ms-badge');
+    if (badge) {
+      if (st.updatable) badge.textContent = msL('可更新', 'Update') + ' ' + storeVersion(m.version);
+      else if (st.installed) badge.textContent = msL('已安装', 'Installed');
+    }
+    let heatText = m.heat || '';
+    if (en) {
+      const mm = /^(\d+(?:\.\d+)?)万$/.exec(heatText);
+      if (mm) {
+        const k = Math.round(parseFloat(mm[1]) * 100) / 10;
+        heatText = (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
+      }
+    }
+    const colon = msL('：', ': ');
+    const meta = card.querySelector('.ms-meta');
+    if (meta) {
+      meta.innerHTML =
+        `<span>${msL('作者', 'Author')}${colon}${esc(storeVal(m.author) || msL('匿名', 'Anonymous'))}</span>` +
+        `<span>${msL('大小', 'Size')}${colon}${esc(storeVal(m.size) || msL('未知', 'Unknown'))}</span>` +
+        (m.compat ? `<span class="ms-compat">${msL('兼容', 'Compatible')}${colon}${esc(storeVal(m.compat))}</span>` : '') +
+        (m.date ? `<span>${msL('更新', 'Updated')}${colon}${esc(m.date)}</span>` : '') +
+        (heatText ? `<span>${msL('热度', 'Popularity')}${colon}${esc(heatText)}</span>` : '') +
+        (m.type ? `<span>${msL('格式', 'Format')}${colon}${esc(m.type)}</span>` : '');
+    }
+    const tags = card.querySelector('.ms-tags');
+    if (tags) tags.innerHTML = (m.tags || []).map(t => `<span class="ms-tag">${esc(storeTag(t))}</span>`).join('');
+    const searchKey = [L.name, L.desc, storeVal(m.author), m.author, (m.tags || []).map(storeTag).join(' ')].join(' ').toLowerCase();
+    card.dataset.search = searchKey;
+    const dlBtn = card.querySelector('[data-ms-dl]');
+    if (dlBtn) dlBtn.textContent = st.updatable ? msL('更新', 'Update') : (st.installed ? msL('重新下载', 'Redownload') : msL('下载', 'Download'));
+    const detailBtn = card.querySelector('[data-ms-detail]');
+    if (detailBtn) detailBtn.textContent = msL('详情', 'Details');
+  };
+
+  // 分帧处理：首帧只更新一屏内约 24 张，剩下的下一帧继续，避免整页语言切换卡住主线程。
+  const run = () => {
+    if (token !== __msLangToken) return; // 用户又切了一次语言，放弃旧批次
+    const end = Math.min(idx + 24, cards.length);
+    for (; idx < end; idx++) updateCard(cards[idx]);
+    applyModstoreFilter();
+    if (idx < cards.length) requestAnimationFrame(run);
+  };
+  run();
+  const empty = $('#ms-empty');
+  if (empty) {
+    empty.innerHTML = msL('没有匹配的模组', 'No matching mods') +
+      '<br><span style="font-size:12px;color:var(--text-dim)">' + msL('试试切换分类或修改搜索关键词', 'Try another category or search term') + '</span>';
+  }
+  applyModstoreFilter();
+}
+
 // ===== 模组详情弹窗 =====
 function showModDetail(m) {
-  $('#mod-detail-title').textContent = m.name || '模组详情';
-  $('#mod-detail-author').textContent = m.author || '匿名';
-  $('#mod-detail-version').textContent = m.version || '未知';
-  $('#mod-detail-size').textContent = m.size || '未知';
-  $('#mod-detail-compat').textContent = m.compat || '全版本';
-  $('#mod-detail-tags').textContent = (m.tags || []).join('、') || '无';
-  $('#mod-detail-desc').textContent = m.desc || '暂无介绍';
+  const L = storeLoc(m);
+  const en = window.I18NGetLang && window.I18NGetLang() === 'en';
+  $('#mod-detail-title').textContent = L.name || msL('模组详情', 'Mod details');
+  $('#mod-detail-author').textContent = storeVal(m.author) || msL('匿名', 'Anonymous');
+  $('#mod-detail-version').textContent = storeVersion(m.version) || msL('未知', 'Unknown');
+  $('#mod-detail-size').textContent = storeVal(m.size) || msL('未知', 'Unknown');
+  $('#mod-detail-compat').textContent = storeVal(m.compat) || msL('全版本', 'All versions');
+  $('#mod-detail-tags').textContent = (m.tags || []).map(storeTag).join(en ? ', ' : '、') || msL('无', 'None');
+  $('#mod-detail-desc').textContent = L.desc || msL('暂无介绍', 'No description');
   const cover = $('#mod-detail-cover');
-  const img = (m.images || [])[0];
+  const img = safeImgUrl((m.images || [])[0]);
   if (img) {
-    cover.innerHTML = `<img src="${img}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;"/>`;
+    cover.innerHTML = `<img src="${esc(img)}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;"/>`;
   } else {
-    cover.textContent = 'SFS 模组';
+    cover.textContent = msL('SFS 模组', 'SFS mod');
   }
   $('#mod-detail-dialog').hidden = false;
 
@@ -2280,7 +2625,7 @@ function showModDetail(m) {
   dlBtn.onclick = async () => {
     if (m.installUrl) {
       await window.launcher.modDownloadURL(m.installUrl);
-      toast('已开始下载：' + (m.name || ''));
+      toast(msL('已开始下载：', 'Download started: ') + (L.name || ''));
       $('#mod-detail-dialog').hidden = true;
     }
   };
@@ -2291,11 +2636,11 @@ $('#mod-detail-close').addEventListener('click', () => { $('#mod-detail-dialog')
 // ===== 模组商店分类 + 搜索 =====
 window.__modCatCapsule = initSegmentCapsule('mod-cat-capsule', 'all', (val) => {
   modstoreFilter.category = val;
-  loadModstore();
+  applyModstoreFilter();
 });
 $('#mod-search').addEventListener('input', (e) => {
   modstoreFilter.search = e.target.value.trim();
-  loadModstore();
+  applyModstoreFilter();
 });
 // ===== END 模组商店分类 + 搜索 =====
 
@@ -2349,7 +2694,7 @@ let dlPanelCollapsed = true; // 默认折叠
 $('#dl-progress-header').addEventListener('click', () => {
   dlPanelCollapsed = !dlPanelCollapsed;
   $('#dl-progress-body').hidden = dlPanelCollapsed;
-  $('#dl-toggle').textContent = dlPanelCollapsed ? '展开 ▾' : '收起 ▴';
+  $('#dl-toggle').textContent = dlPanelCollapsed ? msL('展开 ▾', 'Expand ▾') : msL('收起 ▴', 'Collapse ▴');
 });
 
 // 刷新下载进度面板（最多显示3条）

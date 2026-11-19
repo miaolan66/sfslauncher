@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 const __TIMING = process.argv.includes('--timing');
 const __tl = (k) => { if (__TIMING) { try { console.log('[BOOT] ' + k + ' uptime=' + Math.round(process.uptime() * 1000) + 'ms'); } catch (e) {} } };
 
@@ -19,6 +19,14 @@ const { URL } = require('url');
 // 启动提速：adm-zip(模组/备份) 与 webdav(云盘) 仅在实际用到时才加载，缩短冷启动 require 阶段
 let AdmZip = null;
 function getAdmZip() { return AdmZip || (AdmZip = require('adm-zip')); }
+
+// ZIP 外部属性高 16 位是 Unix mode；0xA000 表示 symlink。解压前拒绝，防止链接把写入带出目标目录。
+function zipEntryIsSymlink(e) {
+  try {
+    const mode = ((e && e.attr) || 0) >>> 16;
+    return (mode & 0xF000) === 0xA000;
+  } catch (_) { return false; }
+}
 let __webdavMod = null;
 function getWebdav() { return __webdavMod || (__webdavMod = require('./webdav')); }
 let iconv = null;
@@ -72,8 +80,9 @@ function writeLog(level, ...args) {
     else if (!logTimer) logTimer = setTimeout(flushLog, 1000);
   } catch (e) {}
 }
-// 退出时把缓冲区日志写完
+// 退出时把缓冲区日志写完，并把去抖中的配置强制落盘
 app.on('will-quit', () => {
+  try { flushConfig(); } catch (e) {}
   try { if (logBuffer.length) fs.writeFileSync(LOG_FILE, logBuffer.join(''), 'utf8'); } catch (e) {}
   // 备份进行中：杀掉 tar 子进程，避免孤儿进程 + temp 残留
   try {
@@ -135,7 +144,8 @@ app.commandLine.appendSwitch('force-color-profile', 'srgb');   // 色彩统一�
 
 const SFS_APPID = '1718870';
 const isSmokeWP = process.argv.includes('--smoke-wp'); // 保留壁纸与琉璃，专门复核深浅切换后的显示
-const isSmoke = process.argv.includes('--smoke') || isSmokeWP;
+const isSmokeLive = process.argv.includes('--smoke-live'); // 独立 profile + 真实壁纸，供 CDP 手动检查，不自动截图退出
+const isSmoke = process.argv.includes('--smoke') || isSmokeWP || isSmokeLive;
 const isSelfTest = process.argv.includes('--selftest');
 // 渲染端在加载时同步问一次是否冒烟模式：冒烟抓图时不弹新手引导，避免污染截图
 ipcMain.on('app:is-smoke', (e) => { e.returnValue = isSmoke; });
@@ -158,6 +168,9 @@ if (isSmoke) {
           c.glass = true;
           c.glassMode = 'liuli';
           c.theme = 'light';
+          c.onboardingDone = true;
+        } else if (isSmokeLive) {
+          // --smoke-live：保留真实壁纸与毛玻璃，供 CDP 检查对比度；不自动截图
           c.onboardingDone = true;
         } else {
           c.glass = false;
@@ -300,16 +313,28 @@ function defaultConfig() {
 }
 
 const CONFIG_VERSION = 1;
+// 配置改成「内存为准 + 去抖异步原子写」：
+// - 原来每次 load 都读 700KB 文件、每次 save 同步写 700KB，窗口拖动 / 开关动作里会卡主线程；
+// - 现在首次读盘后常驻内存，save 只标脏并合并写，退出前强制落盘；
+// - 写入先落 .tmp 再 rename，避免断电/崩溃留下半截 JSON。
+let __cfgCache = null;
+let __cfgDirty = false;
+let __cfgTimer = null;
+
 function loadConfig() {
+  if (__cfgCache) return __cfgCache;
   let raw = null;
   try {
     if (fs.existsSync(CONFIG_PATH)) raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) { raw = null; /* 损坏则回退默认 */ }
-  if (!raw) return defaultConfig();
+  if (!raw) { __cfgCache = defaultConfig(); return __cfgCache; }
   const base = defaultConfig();
   const cfg = Object.assign(base, raw);
+  __cfgCache = cfg;
   if (!Array.isArray(cfg.mods)) cfg.mods = base.mods;
   cfg.mods = Object.assign({ pending: [], installed: [] }, cfg.mods);
+  if (!Array.isArray(cfg.mods.pending)) cfg.mods.pending = [];
+  if (!Array.isArray(cfg.mods.installed)) cfg.mods.installed = [];
   // 一次性迁移：旧版本默认毛玻璃为开、且 Win10 无条件创建分层窗拖慢启动，升级后统一重置为关闭。
   if (raw.configVersion !== CONFIG_VERSION) {
     if (raw.glass === true) cfg.glass = false;
@@ -333,8 +358,26 @@ function loadConfig() {
   return cfg;
 }
 
+function flushConfig() {
+  if (!__cfgDirty || !__cfgCache) return;
+  __cfgDirty = false;
+  const tmp = CONFIG_PATH + '.tmp';
+  try {
+    const text = JSON.stringify(__cfgCache, null, 2);
+    fs.writeFileSync(tmp, text, 'utf8');
+    fs.renameSync(tmp, CONFIG_PATH);
+  } catch (e) {
+    __cfgDirty = true;
+    try { console.error('CONFIG_FLUSH_FAILED', e && e.message); } catch (_) {}
+  }
+}
+
 function saveConfig(cfg) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+  if (!cfg || typeof cfg !== 'object') return;
+  __cfgCache = cfg;
+  __cfgDirty = true;
+  if (__cfgTimer) return;
+  __cfgTimer = setTimeout(() => { __cfgTimer = null; flushConfig(); }, 120);
 }
 
 // ---------- 递归下降 VDF 解析器 ----------
@@ -974,7 +1017,8 @@ function createWindow() {
       webviewTag: true,
       contextIsolation: true,
       nodeIntegration: false,
-      backgroundThrottling: false,
+      // 最小化/被遮挡时降频：原来关掉节流，窗口隐藏后仍全速渲染，白占 CPU/GPU
+      backgroundThrottling: true,
       paintWhenInitiallyHidden: true
     }
   });
@@ -1198,7 +1242,7 @@ function createWindow() {
     });
   }
 
-  if (isSmoke && !isSmokeWP) {
+  if (isSmoke && !isSmokeWP && !isSmokeLive) {
     mainWindow.webContents.on('did-finish-load', () => {
       setTimeout(async () => {
         const capDir = path.join(process.cwd(), '_caps');
@@ -1354,41 +1398,183 @@ function registerIpc() {
     return { success: true, path: logDir };
   });
 
-  // ---------- 注入汉化（SFSChineseInjector，作者 Arctic.，MIT，已获作者同意集成） ----------
-  // 汉化引擎是独立的 C++ 单文件程序（payload 内含 bootstrap/runtime/词表/字体），
-  // Electron 侧只做入口与状态展示：选目录、两个开关的产品口径与它一致，实际注入由它完成。
-  function hanExePath() {
-    const dev = path.join(__dirname, 'assets', 'bin', 'SFSChineseInjector.exe');
+  // ---------- 汉化：启动器直接装运行时 Mod + 词表 ----------
+  // 之前是把 SFSChineseInjector.exe 拉起来让用户手动点；现在按它的落盘结构直接安装：
+  //   Mods/SFSHanRuntime/{SFSHanRuntime.dll, NotoSansSC-Bold.ttf, dict.json, chars.txt}
+  //   Spaceflight Simulator_Data/Custom Translations/简体中文（汉化）.txt
+  //   Saving/Settings/LanguageSettings_2.txt -> {"CodeName":"简体中文（汉化）","Custom":true}
+  // 资源来自注入器 payload（作者 Arctic.，仓库 Arctic-Ice67/SFSChineseInjector），
+  // 许可证为 PolyForm Strict 1.0.0，随包分发前需作者书面授权；未授权时不要打包 assets/han。
+  const HAN_LANG_NAME = '简体中文（汉化）';
+  function hanAsset(rel) {
+    const dev = path.join(__dirname, 'assets', 'han', rel);
     if (fs.existsSync(dev)) return dev;
-    const packed = path.join(process.resourcesPath || '', 'bin', 'SFSChineseInjector.exe');
+    const packed = path.join(process.resourcesPath || '', 'han', rel);
     return fs.existsSync(packed) ? packed : '';
   }
-  ipcMain.handle('han:info', () => {
-    const exe = hanExePath();
-    const cfg = loadConfig();
-    const cur = (cfg.instances || []).find(i => i.current) || (cfg.instances || [])[0];
-    return {
-      success: !!exe,
-      exePath: exe,
-      gameDir: (cur && cur.installDir) || '',
-      exePathOfGame: (cur && cur.exePath) || ''
-    };
-  });
-  ipcMain.handle('han:open', (_e, instId) => {
-    const exe = hanExePath();
-    if (!exe) return { success: false, error: '注入器缺失：assets/bin/SFSChineseInjector.exe 未随包分发' };
+  function hanLayout(instId) {
     const cfg = loadConfig();
     const inst = (cfg.instances || []).find(i => i.id === instId) ||
       (cfg.instances || []).find(i => i.current) || (cfg.instances || [])[0];
-    const dir = (inst && inst.installDir) || '';
+    const root = (inst && inst.installDir) || '';
+    const exe = (inst && inst.exePath) || '';
+    const dataDir = exe ? path.join(path.dirname(exe), path.basename(exe, '.exe') + '_Data') : '';
+    return {
+      inst,
+      root,
+      dataDir,
+      mods: root ? path.join(root, 'Mods') : '',
+      settings: root ? path.join(root, 'Saving', 'Settings') : '',
+      custom: dataDir ? path.join(dataDir, 'Custom Translations') : '',
+      runtime: root ? path.join(root, 'Mods', 'SFSHanRuntime') : '',
+      translation: dataDir ? path.join(dataDir, 'Custom Translations', HAN_LANG_NAME + '.txt') : '',
+      state: root ? path.join(root, 'Saving', 'Settings', 'SFSHanInjector.json') : '',
+      valid: !!(root && dataDir && fs.existsSync(root) && fs.existsSync(dataDir))
+    };
+  }
+  function readHanState(l) {
+    try { return JSON.parse(fs.readFileSync(l.state, 'utf8')); } catch (e) { return null; }
+  }
+  ipcMain.handle('han:status', (_e, instId) => {
+    const l = hanLayout(instId);
+    const st = l.valid ? readHanState(l) : null;
+    const runtimeReady = !!(l.valid &&
+      fs.existsSync(path.join(l.runtime, 'SFSHanRuntime.dll')) &&
+      fs.existsSync(path.join(l.runtime, 'dict.json')) &&
+      fs.existsSync(path.join(l.runtime, 'chars.txt')) &&
+      fs.existsSync(path.join(l.runtime, 'NotoSansSC-Bold.ttf')));
+    const translationReady = !!(l.valid && fs.existsSync(l.translation));
+    let lang = null;
+    try { lang = JSON.parse(fs.readFileSync(path.join(l.settings, 'LanguageSettings_2.txt'), 'utf8')); } catch (e) {}
+    return {
+      success: true,
+      valid: l.valid,
+      gameDir: l.root,
+      dataDir: l.dataDir,
+      running: isGameProcessRunning(),
+      installed: !!(runtimeReady || translationReady),
+      runtimeReady,
+      translationReady,
+      language: (lang && lang.CodeName) || '',
+      assetsReady: !!(hanAsset('runtime/SFSHanRuntime.dll') && hanAsset('dict.json') && hanAsset('translations/zh-CN.txt') && hanAsset('fonts/HarmonyOS_Sans_SC_Regular.ttf'))
+    };
+  });
+  ipcMain.handle('han:install', async (_e, instId) => {
+    const l = hanLayout(instId);
+    if (!l.valid) return { success: false, error: '没有检测到有效的游戏目录' };
+    if (isGameProcessRunning()) return { success: false, error: '游戏正在运行，请先完全退出再安装' };
+    const srcDll = hanAsset('runtime/SFSHanRuntime.dll');
+    const srcFont = hanAsset('fonts/HarmonyOS_Sans_SC_Regular.ttf');
+    const srcDict = hanAsset('dict.json');
+    const srcTr = hanAsset('translations/zh-CN.txt');
+    if (!srcDll || !srcDict || !srcTr || !srcFont) return { success: false, error: '启动器缺少汉化资源文件' };
+    const fsp = fs.promises;
     try {
-      const child = spawn(exe, [], { cwd: dir && fs.existsSync(dir) ? dir : path.dirname(exe), detached: true, stdio: 'ignore', windowsHide: false });
-      child.unref();
-      return { success: true, exePath: exe, gameDir: dir };
+      await fsp.mkdir(l.runtime, { recursive: true });
+      await fsp.copyFile(srcDll, path.join(l.runtime, 'SFSHanRuntime.dll'));
+      if (srcFont) {
+        const fontDst = path.join(l.runtime, 'NotoSansSC-Bold.ttf');
+        let same = false;
+        try {
+          const a = await fsp.stat(srcFont), b = await fsp.stat(fontDst);
+          same = a.size === b.size && a.size > 0;
+        } catch (e) {}
+        if (!same) await fsp.copyFile(srcFont, fontDst); // 8MB，已存在且体积一致就跳过
+      }
+      const dictText = await fsp.readFile(srcDict, 'utf8');
+      await fsp.writeFile(path.join(l.runtime, 'dict.json'), dictText, 'utf8');
+      const trText = await fsp.readFile(srcTr, 'utf8');
+      await fsp.mkdir(l.custom, { recursive: true });
+      await fsp.writeFile(l.translation, trText, 'utf8');
+
+      await fsp.mkdir(l.settings, { recursive: true });
+      const settingsFile = path.join(l.settings, 'LanguageSettings_2.txt');
+      const settingsBak = settingsFile + '.hanbak';
+      const settingsExisted = fs.existsSync(settingsFile);
+      if (settingsExisted && !fs.existsSync(settingsBak)) await fsp.copyFile(settingsFile, settingsBak);
+      await fsp.writeFile(settingsFile, JSON.stringify({ CodeName: HAN_LANG_NAME, Custom: true }, null, 2), 'utf8');
+
+      // chars.txt：给运行时 Mod 预热字体图集，少了它会缺字显示方块
+      const uni = new Set();
+      for (const ch of trText + dictText) {
+        if (ch.codePointAt(0) > 0x7f) uni.add(ch);
+      }
+      await fsp.writeFile(path.join(l.runtime, 'chars.txt'), Array.from(uni).join(''), 'utf8');
+
+      const files = [
+        path.join(l.runtime, 'SFSHanRuntime.dll'),
+        path.join(l.runtime, 'NotoSansSC-Bold.ttf'),
+        path.join(l.runtime, 'dict.json'),
+        path.join(l.runtime, 'chars.txt'),
+        l.translation
+      ];
+      const st = {
+        tool: 'SFSHanInjector',
+        installed: true,
+        language_name: HAN_LANG_NAME,
+        translation_path: l.translation,
+        settings_existed: settingsExisted,
+        font_runtime: true,
+        files
+      };
+      await fsp.writeFile(l.state, JSON.stringify(st, null, 2) + '\n', 'utf8');
+      return { success: true, gameDir: l.root, translation: l.translation };
     } catch (e) {
-      return { success: false, error: e.message };
+      return { success: false, error: e.message || String(e) };
     }
   });
+  ipcMain.handle('han:uninstall', async (_e, instId) => {
+    const l = hanLayout(instId);
+    if (!l.valid) return { success: false, error: '没有检测到有效的游戏目录' };
+    if (isGameProcessRunning()) return { success: false, error: '游戏正在运行，请先完全退出再卸载' };
+    const fsp = fs.promises;
+    try {
+      const settingsFile = path.join(l.settings, 'LanguageSettings_2.txt');
+      const settingsBak = settingsFile + '.hanbak';
+      if (fs.existsSync(settingsBak)) {
+        await fsp.copyFile(settingsBak, settingsFile);
+        await fsp.unlink(settingsBak).catch(() => {});
+      } else {
+        // 没有原始备份时，只有当前语言仍指向汉化才删除；用户中途改成别的语言就保留。
+        let cur = null;
+        try { cur = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) {}
+        if (!cur || !cur.CodeName || cur.CodeName === HAN_LANG_NAME) {
+          await fsp.unlink(settingsFile).catch(() => {});
+        }
+      }
+      const st = readHanState(l) || {};
+      const trPath = st.translation_path || l.translation;
+      // 状态文件可能被外部改坏：只删除游戏 dataDir 内的词表，别把任意路径传进 unlink。
+      try {
+        const dataResolved = path.resolve(l.dataDir);
+        const trResolved = path.resolve(String(trPath || ''));
+        if (trPath && (trResolved === dataResolved || trResolved.startsWith(dataResolved + path.sep))) {
+          await fsp.unlink(trResolved).catch(() => {});
+        }
+      } catch (e) {}
+      for (const name of ['SFSHanRuntime.dll', 'dict.json', 'NotoSansSC-Bold.ttf', 'chars.txt', 'SFSHanRuntime.log']) {
+        await fsp.unlink(path.join(l.runtime, name)).catch(() => {});
+      }
+      try {
+        const left = await fsp.readdir(l.runtime);
+        if (!left.length) await fsp.rmdir(l.runtime);
+      } catch (e) {}
+      const next = Object.assign({}, st, {
+        tool: 'SFSHanInjector', installed: false, language_name: '', translation_path: '', font_runtime: false, files: []
+      });
+      await fsp.mkdir(l.settings, { recursive: true });
+      await fsp.writeFile(l.state, JSON.stringify(next, null, 2) + '\n', 'utf8');
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message || String(e) };
+    }
+  });
+  // 兼容旧调用：老渲染层还可能在调 han:info / han:open，统一回落到状态查询
+  ipcMain.handle('han:info', (_e, instId) => {
+    const l = hanLayout(instId);
+    return { success: l.valid, gameDir: l.root, exePathOfGame: (l.inst && l.inst.exePath) || '' };
+  });
+  ipcMain.handle('han:open', () => ({ success: false, error: '已改为启动器内直接安装，不需要外部注入器' }));
 
   // 获取日志目录路径
   ipcMain.handle('log:getDir', () => {
@@ -1517,8 +1703,22 @@ ipcMain.handle('steam:scan', async () => {
         return { success: false, error: '只能添加 Spaceflight Simulator（SFS）游戏实例。' };
       }
     }
+    {
+      // 同名实例一律拒绝：同一份游戏目录、复制/目录联接出来的第二份目录都可能重名，
+      // 列表里出现两个同名卡片会让「当前实例」和模组归属无法分辨。
+      const nameKey = String(game.name || '').trim().toLowerCase();
+      if (nameKey && cfg.instances.some(i => String(i.name || '').trim().toLowerCase() === nameKey)) {
+        return { success: false, error: '同名实例已存在，请换一个名称。' };
+      }
+    }
     if (cfg.instances.some(i => i.exePath && game.exePath && i.exePath === game.exePath)) {
       return { success: false, error: '该游戏实例已存在，无需重复添加' };
+    }
+    {
+      const newName = String(game.name || '').trim().toLowerCase();
+      if (newName && cfg.instances.some(i => String(i.name || '').trim().toLowerCase() === newName)) {
+        return { success: false, error: '已有同名实例，请换一个名称' };
+      }
     }
     cfg.instances.push({
       id: Date.now() + '' + Math.floor(Math.random() * 1000),
@@ -1603,7 +1803,8 @@ ipcMain.handle('steam:scan', async () => {
     crashWatchTimer = setInterval(() => {
       let running = false, crashWin = null;
       try { running = w.processRunning(names); } catch (e) { running = false; }
-      try { crashWin = w.findUnityCrash(names); } catch (e) { crashWin = null; }
+      // 游戏没跑就不枚举窗口：原来每 2 秒两次全进程枚举，空闲时纯烧 CPU
+      if (running) { try { crashWin = w.findUnityCrash(names); } catch (e) { crashWin = null; } }
       if (crashWin && !crashShown) {
         crashShown = true;
         notifyCrash(names[0], crashWin.title);
@@ -1810,6 +2011,12 @@ ipcMain.handle('steam:scan', async () => {
   // 直接触发会话下载（解决网页 window.open 被拦截导致下载不了）
   ipcMain.handle('mod:downloadURL', async (_e, url) => {
     try {
+      // 商店 JSON 是第三方数据，下载入口只放行 http/https，避免 file:// 或自定义协议
+      let parsed;
+      try { parsed = new URL(String(url || '')); } catch (e) { return { success: false, error: '下载地址无效' }; }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { success: false, error: '只允许 http/https 下载地址' };
+      }
       const cfg = loadConfig();
       // 线程数硬限制在 1~16：前端胶囊只到 16，此处兜底防止配置被外部改成异常值
       const threads = Math.min(16, Math.max(1, parseInt(cfg.dlThreads, 10) || 1));
@@ -1837,7 +2044,10 @@ ipcMain.handle('steam:scan', async () => {
     const headRes = await headRequest(url);
     const totalSize = headRes.contentLength;
     const acceptRanges = headRes.acceptRanges;
-    const filename = headRes.filename || path.basename(new URL(url).pathname) || 'mod.zip';
+    // Content-Disposition 的文件名不可信：只取 basename 并清掉 Windows 非法字符，
+    // 否则 ../../xxx 会把文件写出下载目录。
+    const rawName = (headRes.filename || path.basename(new URL(url).pathname) || 'mod.zip');
+    const filename = path.basename(rawName).replace(/[<>:"/\\|?*\x00-\x1f]/g, '_') || 'mod.zip';
 
     // 不支持 Range → 自动降级单线程
     if (!acceptRanges || totalSize <= 0 || threadCount <= 1) {
@@ -1935,10 +2145,14 @@ ipcMain.handle('steam:scan', async () => {
         const ar = res.headers['accept-ranges'] === 'bytes';
         const cd = res.headers['content-disposition'] || '';
         const m = cd.match(/filename="?([^"]+)"?/);
+        let fn = null;
+        if (m) {
+          try { fn = decodeURIComponent(m[1]); } catch (_) { fn = m[1]; }
+        }
         resolve({
           contentLength: cl,
           acceptRanges: ar,
-          filename: m ? decodeURIComponent(m[1]) : null
+          filename: fn
         });
       });
       req.on('error', reject);
@@ -1954,14 +2168,20 @@ ipcMain.handle('steam:scan', async () => {
       const mod = u.protocol === 'https:' ? https : http;
       const file = fs.createWriteStream(savePath);
       let lastRecv = 0;
+      const fail = (err) => {
+        try { file.destroy(); } catch (_) {}
+        reject(err);
+      };
 
       const req = mod.request(urlStr, {
         headers: { 'Range': `bytes=${start}-${end}` }
       }, (res) => {
         if (res.statusCode !== 206 && res.statusCode !== 200) {
-          reject(new Error('HTTP ' + res.statusCode));
+          res.resume();
+          fail(new Error('HTTP ' + res.statusCode));
           return;
         }
+        res.on('error', fail);
         res.pipe(file);
         res.on('data', () => {
           const recv = res.socket.bytesRead - lastRecv;
@@ -1970,8 +2190,8 @@ ipcMain.handle('steam:scan', async () => {
         });
         file.on('finish', () => { file.close(resolve); });
       });
-      req.on('error', reject);
-      req.setTimeout(30000, () => { req.destroy(); reject(new Error('连接超时')); });
+      req.on('error', fail);
+      req.setTimeout(30000, () => { req.destroy(); fail(new Error('连接超时')); });
       req.end();
     });
   }
@@ -2012,6 +2232,7 @@ ipcMain.handle('steam:scan', async () => {
 
   // 扩展包（Custom Solar Systems）快捷导入：必须含 Planet Data、禁止嵌套多余文件夹
   ipcMain.handle('mod:pickSolar', async () => {
+    if (isGameProcessRunning()) return { success: false, error: '游戏正在运行，请先退出再导入扩展包' };
     const r = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [{ name: tx('filterSolar', '扩展包（ZIP）'), extensions: ['zip'] }]
@@ -2039,36 +2260,57 @@ ipcMain.handle('steam:scan', async () => {
         break;
       }
       if (!solarRootName) throw new Error('扩展包不完整');
-      const destDir = path.join(cspRoot, solarRootName);
+      // 包名来自 ZIP，先收紧成单层合法目录名，避免 ../ 或绝对路径写出 Custom Solar Systems
+      const safeRoot = path.basename(String(solarRootName).replace(/[<>:"|?*\x00-\x1f]/g, '_'));
+      if (!safeRoot || safeRoot === '.' || safeRoot === '..') throw new Error('扩展包目录名非法');
+      const destDir = path.join(cspRoot, safeRoot);
       fs.mkdirSync(cspRoot, { recursive: true });
+      const tmpDir = fs.mkdtempSync(path.join(cspRoot, '.import-'));
+      const tmpResolved = path.resolve(tmpDir);
+      let bakDir = null;
       let count = 0;
-      for (const e of entries) {
-        if (e.isDirectory) continue;
-        const segs = e.entryName.split('/').filter(Boolean);
-        let rel;
-        if (flatMode) {
-          // 扁平包：zip 内所有文件直接落到 destDir（destDir 已用 zip 名建过）
-          rel = segs.join('/');
-        } else {
-          if (segs[0] !== solarRootName) continue;
-          rel = segs.slice(1).join('/');
+      try {
+        for (const e of entries) {
+          if (e.isDirectory) continue;
+          const segs = e.entryName.split('/').filter(Boolean);
+          if (segs.some(s => s === '..' || s === '.')) throw new Error('扩展包包含非法路径');
+          let rel;
+          if (flatMode) {
+            rel = segs.join('/');
+          } else {
+            if (segs[0] !== solarRootName) continue;
+            rel = segs.slice(1).join('/');
+          }
+          if (!rel) continue;
+          const out = path.resolve(tmpDir, rel);
+          if (!out.startsWith(tmpResolved + path.sep)) throw new Error('扩展包包含越界路径');
+          fs.mkdirSync(path.dirname(out), { recursive: true });
+          fs.writeFileSync(out, e.getData());
+          count++;
         }
-        if (!rel) continue;
-        const out = path.join(destDir, rel);
-        fs.mkdirSync(path.dirname(out), { recursive: true });
-        fs.writeFileSync(out, e.getData());
-        count++;
-      }
-      if (count === 0 || !isValidSolarPackage(destDir)) {
-        fs.rmSync(destDir, { recursive: true, force: true });
-        throw new Error('扩展包不完整');
+        if (count === 0 || !isValidSolarPackage(tmpDir)) throw new Error('扩展包不完整');
+        // 新包校验通过后再替换旧目录：旧的先改名，失败可回滚，不再直接 rm 掉同名包
+        if (fs.existsSync(destDir)) {
+          bakDir = destDir + '.bak-' + Date.now();
+          fs.renameSync(destDir, bakDir);
+        }
+        fs.renameSync(tmpDir, destDir);
+        if (bakDir) { try { fs.rmSync(bakDir, { recursive: true, force: true }); } catch (e) {} }
+      } catch (e) {
+        // 回滚：新目录没换成，旧目录还在 .bak 上
+        if (bakDir && !fs.existsSync(destDir)) {
+          try { fs.renameSync(bakDir, destDir); } catch (_) {}
+        }
+        throw e;
+      } finally {
+        try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
       }
       const cfg = loadConfig();
       cfg.mods.installed.unshift({
-        name: solarRootName, type: 'solar', target: relPath(cspRoot, destDir),
+        name: safeRoot, type: 'solar', target: relPath(cspRoot, destDir),
         count, files: [relPath(cspRoot, destDir)], installedAt: Date.now()
       });
-      pushImportHistory(cfg, { name: solarRootName, type: 'solar', ok: true });
+      pushImportHistory(cfg, { name: safeRoot, type: 'solar', ok: true });
       saveConfig(cfg);
       return { success: true, summary: `扩展包已导入 → ${relPath(base, destDir)}`, target: relPath(cspRoot, destDir), files: count };
     } catch (e) {
@@ -2152,8 +2394,10 @@ ipcMain.handle('steam:scan', async () => {
   });
 
   // 拖入文件导入：按扩展名自动识别类型，复用现有 deploy 逻辑
-  ipcMain.handle('mod:importFile', async (_e, { path: fp, instId }) => {
+  ipcMain.handle('mod:importFile', async (_e, { path: filePath, instId }) => {
+    const fp = filePath;
     if (!fp || !fs.existsSync(fp)) return { success: false, error: '文件不存在' };
+    if (isGameProcessRunning()) return { success: false, error: '游戏正在运行，请先退出再导入模组' };
     const ext = path.extname(fp).toLowerCase();
     let type;
     if (ext === '.dll') type = 'dll';
@@ -2256,12 +2500,26 @@ ipcMain.handle('steam:scan', async () => {
         for (const d of subdirs) walkAdd(path.join(base, d), d + '/');
         zip.writeZip(r.filePath);
       } else {
-        // tar.exe 流式打包：-a 按扩展名自动选压缩格式（.sfsbak 不认识就用 zip 兼容）
-        const args = ['-a', '-c', '-f', r.filePath, '-C', base, ...subdirs];
+        // 必须显式 --format=zip：-a 对 .sfsbak 这种未知扩展名会写出裸 tar，
+        // 而恢复端用的是 adm-zip，读裸 tar 会直接报 “No END header found”。
+        const args = ['--format=zip', '-c', '-f', r.filePath, '-C', base, ...subdirs];
         await new Promise((resolve, reject) => {
           require('child_process').execFile(tarExe, args, { windowsHide: true, timeout: 600000, maxBuffer: 1024*1024*10 },
             (err) => err ? reject(err) : resolve());
         });
+        // 落盘后校验 ZIP 头，避免再次产出“能存不能还原”的备份
+        try {
+          const fd = fs.openSync(r.filePath, 'r');
+          const head = Buffer.alloc(4);
+          fs.readSync(fd, head, 0, 4, 0);
+          fs.closeSync(fd);
+          if (!(head[0] === 0x50 && head[1] === 0x4b)) throw new Error('备份文件不是有效的 ZIP');
+          // 同 backup:create：PK 头不能证明中央目录存在，必须实际读一次条目表。
+          new (getAdmZip())(r.filePath).getEntries();
+        } catch (e) {
+          try { fs.unlinkSync(r.filePath); } catch (_) {}
+          throw e;
+        }
       }
       return { success: true, path: r.filePath };
     } catch (e) { return { success: false, error: e.message }; }
@@ -2291,15 +2549,28 @@ ipcMain.handle('steam:scan', async () => {
       const Zip = getAdmZip();
       const zip = new Zip(r.filePaths[0]);
       const baseResolved = path.resolve(base);
+      // 先整体校验条目，再解到临时目录，成功后才合并回游戏目录：
+      // 原来边遍历边写，ZIP 中途损坏会留下写了一半的存档/模组。
       for (const e of zip.getEntries()) {
         if (e.isDirectory) continue;
+        if (zipEntryIsSymlink(e)) {
+          return { success: false, error: '备份包含符号链接，已拒绝恢复' };
+        }
         const entryName = e.entryName || '';
-        // 路径穿越校验：拒绝 .. 和绝对路径
-        if (entryName.includes('..') || path.isAbsolute(entryName)) continue;
+        if (entryName.includes('..') || path.isAbsolute(entryName)) {
+          return { success: false, error: '备份包含非法路径：' + entryName };
+        }
         const out = path.resolve(base, entryName.split('/').join(path.sep));
-        if (!out.startsWith(baseResolved + path.sep) && out !== baseResolved) continue;
-        fs.mkdirSync(path.dirname(out), { recursive: true });
-        fs.writeFileSync(out, e.getData());
+        if (!out.startsWith(baseResolved + path.sep) && out !== baseResolved) {
+          return { success: false, error: '备份包含越界路径：' + entryName };
+        }
+      }
+      const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sfs-restore-'));
+      try {
+        zip.extractAllTo(tmp, true);
+        fs.cpSync(tmp, base, { recursive: true, force: true });
+      } finally {
+        try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) {}
       }
       return { success: true };
     } catch (e) { return { success: false, error: e.message }; }
@@ -2406,27 +2677,32 @@ ipcMain.handle('steam:scan', async () => {
   // 删除已装模组：同时删除实际部署的文件（files 存的是相对路径，需拼回 sfsDataDir）
   ipcMain.handle('mod:removeInstalled', (_e, index) => {
     const cfg = loadConfig();
-    const entry = cfg.mods.installed[index];
+    const i = Number(index);
+    if (!Number.isInteger(i) || i < 0 || i >= cfg.mods.installed.length) return cfg.mods.installed;
+    const entry = cfg.mods.installed[i];
     const root = sfsDataDir();
+    const rootResolved = path.resolve(root);
     if (entry && Array.isArray(entry.files)) {
       for (const rel of entry.files) {
         try {
-          const abs = path.isAbsolute(rel) ? rel : path.join(root, rel);
+          // 只允许删除游戏目录内的文件，防止配置被改坏后误删游戏目录外的文件。
+          const abs = path.resolve(path.isAbsolute(rel) ? rel : path.join(root, rel));
+          if (!abs.startsWith(rootResolved + path.sep)) continue;
           if (fs.existsSync(abs)) fs.unlinkSync(abs);
         } catch (e) { /* 忽略单文件删除失败 */ }
       }
       // 涂装包/蓝图目录：如果记录了 target 目录且已空，顺手删掉
       if (entry.target) {
         try {
-          const tdir = path.isAbsolute(entry.target) ? entry.target : path.join(root, entry.target);
-          if (fs.existsSync(tdir) && fs.statSync(tdir).isDirectory()) {
+          const tdir = path.resolve(path.isAbsolute(entry.target) ? entry.target : path.join(root, entry.target));
+          if (tdir.startsWith(rootResolved + path.sep) && fs.existsSync(tdir) && fs.statSync(tdir).isDirectory()) {
             const left = fs.readdirSync(tdir);
             if (left.length === 0) fs.rmdirSync(tdir);
           }
         } catch (e) { /* 忽略 */ }
       }
     }
-    cfg.mods.installed.splice(index, 1);
+    cfg.mods.installed.splice(i, 1);
     saveConfig(cfg);
     return cfg.mods.installed;
   });
@@ -2486,11 +2762,14 @@ ipcMain.handle('steam:scan', async () => {
       const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const out = path.join(dir, `sfs-backup-${ts}.zip`);
       if (!fs.existsSync(root)) return { success: false, error: '游戏数据目录不存在：' + root };
+      // 只备份 Mods 和 Saving。原来用 -C root . 会把整个游戏目录（含 GB 级本体）打进备份。
+      const subs = ['Mods', 'Saving'].filter(d => fs.existsSync(path.join(root, d)));
+      if (!subs.length) return { success: false, error: '游戏目录下没有 Mods 或 Saving' };
       const tarExe = process.env.SystemRoot + '\\System32\\tar.exe';
       if (fs.existsSync(tarExe)) {
         const { execFile } = require('child_process');
         await new Promise((resolve, reject) => {
-          execFile(tarExe, ['-a', '-c', '-f', out, '-C', root, '.'],
+          execFile(tarExe, ['--format=zip', '-c', '-f', out, '-C', root, ...subs],
             { windowsHide: true, timeout: 300000 },
             (err) => err ? reject(err) : resolve());
         });
@@ -2498,8 +2777,21 @@ ipcMain.handle('steam:scan', async () => {
         // 老系统无 tar.exe，回退 adm-zip
         const Zip = getAdmZip();
         const zip = new Zip();
-        zip.addLocalFolder(root, '.');
+        for (const sub of subs) zip.addLocalFolder(path.join(root, sub), sub);
         zip.writeZip(out);
+      }
+      try {
+        const fd = fs.openSync(out, 'r');
+        const head = Buffer.alloc(4);
+        fs.readSync(fd, head, 0, 4, 0);
+        fs.closeSync(fd);
+        if (!(head[0] === 0x50 && head[1] === 0x4b)) throw new Error('备份文件不是有效的 ZIP');
+        // 头正确不代表归档完整：没有中央目录的截断 ZIP 也会以 PK 开头。
+        // 读一次条目表，确保备份真的能打开，而不是留下一个“看起来成功”的废包。
+        new (getAdmZip())(out).getEntries();
+      } catch (e) {
+        try { fs.unlinkSync(out); } catch (_) {}
+        throw e;
       }
       return { success: true, file: out, size: fs.statSync(out).size };
     } catch (e) { return { success: false, error: e.message }; }
@@ -2537,6 +2829,11 @@ ipcMain.handle('steam:scan', async () => {
     try {
       const { file, targetDir, source } = arg || {};
       const target = targetDir || sfsDataDir();
+      // 备份名只能是文件名：配置或 IPC 被改坏时，别让 path.join 跳出备份目录。
+      const safeFile = path.basename(String(file || ''));
+      if (!safeFile || safeFile === '.' || safeFile === '..' || safeFile !== String(file || '')) {
+        return { success: false, error: '备份文件名非法' };
+      }
       fs.mkdirSync(target, { recursive: true });
       const cfg = loadConfig();
       const src = source || 'local';
@@ -2551,19 +2848,66 @@ ipcMain.handle('steam:scan', async () => {
         zipPath = path.join(backupsDir(), file);
       }
       if (!zipPath || !fs.existsSync(zipPath)) return { success: false, error: '备份文件不存在' };
-      // 解压前清空 target 下的 Mods/Saving，避免备份后删除的文件恢复后残留
-      for (const sub of ['Mods', 'Saving']) {
-        const d = path.join(target, sub);
-        if (fs.existsSync(d)) {
-          try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) {}
+      // 先解到临时目录，确认成功后再替换 Mods/Saving：
+      // 原来先删再解，压缩包损坏或中途失败会把现有存档和模组一起弄丢。
+      // 先校验 ZIP 条目，拒绝越界路径，再解到临时目录
+      try {
+        const ZipChk = getAdmZip();
+        for (const e of new ZipChk(zipPath).getEntries()) {
+          if (zipEntryIsSymlink(e)) {
+            return { success: false, error: '备份包含符号链接，已拒绝恢复' };
+          }
+          const n = String(e.entryName || '');
+          if (n.includes('..') || path.isAbsolute(n)) return { success: false, error: '备份包含非法路径：' + n };
         }
+      } catch (e) {
+        return { success: false, error: '备份文件无法读取：' + e.message };
       }
-      await new Promise((resolve, reject) => {
-        execFile(process.env.SystemRoot + '\\System32\\tar.exe',
-          ['-x', '-f', zipPath, '-C', target],
-          { windowsHide: true, timeout: 600000 },
-          (err) => err ? reject(err) : resolve());
-      });
+      const tmpDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'sfs-restore-'));
+      try {
+        const tarExe = process.env.SystemRoot + '\\System32\\tar.exe';
+        if (fs.existsSync(tarExe)) {
+          await new Promise((resolve, reject) => {
+            execFile(tarExe, ['-x', '-f', zipPath, '-C', tmpDir],
+              { windowsHide: true, timeout: 600000 },
+              (err) => err ? reject(err) : resolve());
+          });
+        } else {
+          const Zip = getAdmZip();
+          new Zip(zipPath).extractAllTo(tmpDir, true);
+        }
+        if (!fs.readdirSync(tmpDir).length) return { success: false, error: '备份包是空的' };
+        // 只替换备份包里实际存在的目录；旧包可能只有 Saving，不能顺手把 Mods 删掉。
+        // 旧目录先改名保留，复制成功后再删；复制失败则回滚，避免“先删再解”丢数据。
+        const moved = [];
+        const created = [];
+        try {
+          for (const sub of ['Mods', 'Saving']) {
+            const src = path.join(tmpDir, sub);
+            if (!fs.existsSync(src)) continue;
+            const d = path.join(target, sub);
+            if (fs.existsSync(d)) {
+              const bak = d + '.bak-' + Date.now();
+              fs.renameSync(d, bak);
+              moved.push({ d, bak });
+            } else {
+              created.push(d);
+            }
+            fs.cpSync(src, d, { recursive: true, force: true });
+          }
+        } catch (e) {
+          for (const d of created) { try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) {} }
+          for (let i = moved.length - 1; i >= 0; i--) {
+            const m = moved[i];
+            try { fs.rmSync(m.d, { recursive: true, force: true }); } catch (_) {}
+            try { fs.renameSync(m.bak, m.d); } catch (_) {}
+          }
+          throw e;
+        }
+        for (const m of moved) { try { fs.rmSync(m.bak, { recursive: true, force: true }); } catch (_) {} }
+      } finally {
+        try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
+      }
       if (tmp) { try { fs.unlinkSync(tmp); } catch (e) {} }
       return { success: true, target };
     } catch (e) { return { success: false, error: e.message }; }
@@ -2574,6 +2918,10 @@ ipcMain.handle('steam:scan', async () => {
       let file, source;
       if (typeof arg === 'string') { file = arg; source = 'local'; }
       else { file = arg.file; source = arg.source || 'local'; }
+      // 备份名只允许文件名，避免 path.join 把 ../ 带出备份目录。
+      const safeFile = path.basename(String(file || ''));
+      if (!safeFile || safeFile === '.' || safeFile === '..' || safeFile !== String(file || '')) return false;
+      file = safeFile;
       const cfg = loadConfig();
       if (source === 'webdav' && cfg.webdav && cfg.webdav.url) { await getWebdav().remove(cfg.webdav, file); return true; }
       if (source === 'folder' && cfg.cloudBackupDir) { fs.unlinkSync(path.join(cfg.cloudBackupDir, file)); return true; }
@@ -2745,7 +3093,7 @@ ipcMain.handle('steam:scan', async () => {
   ipcMain.handle('icon:fromPath', async (_e, exePath) => {
     try {
       if (!exePath || !fs.existsSync(exePath)) return { success: false };
-      const dataUrl = await extractIconFromExe(exe);
+      const dataUrl = await extractIconFromExe(exePath);
       return dataUrl ? { success: true, dataUrl } : { success: false };
     } catch (e) { return { success: false, error: e.message }; }
   });
@@ -2772,6 +3120,11 @@ ipcMain.handle('steam:scan', async () => {
     try {
       const root = sfsDataDir();
       const abs = path.isAbsolute(rel) ? rel : path.join(root, rel.split('/').join(path.sep));
+      const bpRoot = path.resolve(root, 'Saving', 'Blueprints');
+      const absResolved = path.resolve(abs);
+      if (absResolved !== bpRoot && !absResolved.startsWith(bpRoot + path.sep)) {
+        return { success: false, error: '只能打开蓝图目录内的路径' };
+      }
       if (!fs.existsSync(abs)) return { success: false, error: '路径不存在' };
       shell.openPath(abs);
       return { success: true };
@@ -2876,6 +3229,11 @@ ipcMain.handle('steam:scan', async () => {
     try {
       const root = sfsDataDir();
       const abs = path.isAbsolute(rel) ? rel : path.join(root, rel.split('/').join(path.sep));
+      const bpRoot = path.resolve(root, 'Saving', 'Blueprints');
+      const absResolved = path.resolve(abs);
+      if (absResolved !== bpRoot && !absResolved.startsWith(bpRoot + path.sep)) {
+        return { success: false, error: '只能读取蓝图目录内的文件' };
+      }
       if (!fs.existsSync(abs)) return { success: false, error: '文件不存在' };
       let txt = fs.readFileSync(abs, 'utf8');
       return { success: true, text: txt.slice(0, 200000) };

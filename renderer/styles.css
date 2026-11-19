@@ -1,4 +1,4 @@
-﻿/* ===== SFS 启动器 · 仿 WeGame 深色风 ===== */
+/* ===== SFS 启动器 · 仿 WeGame 深色风 ===== */
 :root, [data-theme="dark"] {
   --bg-solid: #0d1117;
   --bg-2-solid: #161b22;
@@ -512,18 +512,22 @@ html.glass-mask-on.glass-mask-fade .glass-mask { opacity: 0; transition: opacity
 .tutorial li { margin-bottom: 8px; }
 .tutorial code { background: var(--bg-3); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
 
-.toast {
+.toast-stack {
   position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  z-index: 200; display: flex; flex-direction: column; align-items: center;
+  gap: 8px; pointer-events: none; max-width: calc(100vw - 32px);
+}
+.toast-item {
   background: var(--bg-3); border: 1px solid var(--accent);
   padding: 10px 20px; border-radius: 8px;
-  z-index: 200; font-size: 13px;
+  font-size: 13px; line-height: 1.5; color: var(--text);
   box-shadow: 0 4px 20px rgba(0,0,0,.5);
-  animation: toastIn .18s cubic-bezier(.2,0,.2,1);
+  max-width: 100%; word-break: break-word; pointer-events: auto;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .18s cubic-bezier(.2,0,.2,1), transform .18s cubic-bezier(.2,0,.2,1);
 }
-@keyframes toastIn {
-  from { opacity: 0; transform: translate(-50%, 14px); }
-  to   { opacity: 1; transform: translate(-50%, 0); }
-}
+.toast-item.show { opacity: 1; transform: translateY(0); }
+.toast-item.out { opacity: 0; transform: translateY(10px); }
 
 .page-title { font-size: 20px; margin-bottom: 16px; }
 ::-webkit-scrollbar { width: 8px; }
@@ -1072,7 +1076,7 @@ html[data-theme="light"]:not(.glass) .game-card:hover,
 html[data-theme="light"]:not(.glass) .instance-card:hover{ box-shadow:0 6px 16px rgba(16,24,40,.10); }
 html[data-theme="light"]:not(.glass) .win-dialog,
 html[data-theme="light"]:not(.glass) .install-dialog{ box-shadow:0 16px 40px rgba(16,24,40,.20), 0 3px 10px rgba(16,24,40,.10); }
-html[data-theme="light"]:not(.glass) .toast{ box-shadow:0 8px 28px rgba(16,24,40,.22); }
+html[data-theme="light"]:not(.glass) .toast-item{ box-shadow:0 8px 28px rgba(16,24,40,.22); }
 html[data-theme="light"]:not(.glass) .ctx-menu{ box-shadow:0 8px 24px rgba(16,24,40,.16); }
 html[data-theme="light"]:not(.glass) .nav-item:hover{ background:rgba(46,125,246,.08); }
 html[data-theme="light"]:not(.glass) .nav-item.active{ background:rgba(46,125,246,.15); }
@@ -1738,16 +1742,28 @@ body.glass.glass-liuli .sidebar .nav-item.active {
   border-left-color: var(--ll-brand);
 }
 
-/* ===== 新手教程：5 页讲解 + 任务清单 ===== */
+/* ===== 新手教程：强制操作导览 + 任务清单 ===== */
 .ob2-mask {
   position: fixed; inset: 0; z-index: 100000;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: rgba(0, 0, 0, .5);
+  pointer-events: none;
 }
 .ob2-mask[hidden] { display: none; }
+.ob2-hole {
+  position: fixed; z-index: 100000;
+  background: rgba(0, 0, 0, .55);
+  pointer-events: auto;
+}
+.ob2-spot {
+  position: fixed; z-index: 100001; pointer-events: none;
+  border: 2px solid var(--accent); border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 0 22px color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: left .12s ease, top .12s ease, width .12s ease, height .12s ease;
+}
 .ob2-card {
+  position: fixed; z-index: 100002;
   width: min(520px, 100%); max-height: calc(100vh - 80px);
   overflow: auto; box-sizing: border-box;
+  pointer-events: auto;
   background: var(--ll-popup-bg, var(--bg-2));
   border: 1px solid var(--border); border-radius: 14px;
   padding: 22px 24px 18px; color: var(--text);
@@ -1763,8 +1779,21 @@ body.glass.glass-liuli .sidebar .nav-item.active {
 .ob2-skip:hover { color: var(--text); background: var(--bg-3); }
 .ob2-title { font-size: 19px; font-weight: 700; letter-spacing: .2px; margin-bottom: 10px; }
 .ob2-body { font-size: 13.5px; line-height: 1.75; opacity: .92; }
+.ob2-note {
+  margin-top: 12px; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  font-size: 12px; line-height: 1.6; color: var(--text-dim);
+}
 .ob2-keys { margin: 14px 0 0; padding-left: 18px; }
 .ob2-keys li { font-size: 12.5px; line-height: 1.7; color: var(--text-dim); }
+.ob2-act {
+  margin-top: 14px; padding: 9px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-3); border-radius: 0 8px 8px 0;
+  font-size: 13px; font-weight: 600; line-height: 1.6;
+}
+.ob2-esc { font-size: 11.5px; line-height: 1.6; color: var(--text-dim); }
 .ob2-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; }
 .ob2-btn {
   appearance: none; height: 30px; padding: 0 16px; border-radius: 8px;
@@ -1891,3 +1920,24 @@ html[data-theme="light"] .lang-menu {
 .lang-option:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 html[data-theme="dark"] .lang-menu .lang-option:hover { background: rgba(255,255,255,.08); }
 html[data-theme="light"] .lang-menu .lang-option:hover { background: rgba(17,17,18,.06); }
+/* ===== 商店标签在壁纸/毛玻璃上的可读性：实底标签，不再依赖半透明底 ===== */
+.ms-tag {
+  background: #0b1220;
+  color: #e6efff;
+  box-shadow: inset 0 0 0 1px rgba(150, 180, 255, .38);
+}
+html.glass .ms-tag {
+  background: #0b1220;
+  color: #e6efff;
+  box-shadow: inset 0 0 0 1px rgba(150, 180, 255, .38);
+}
+html[data-theme="light"].glass .ms-tag {
+  background: #ffffff;
+  color: #0b4a9f;
+  box-shadow: inset 0 0 0 1px rgba(46, 125, 246, .55);
+}
+html[data-theme="light"]:not(.glass) .ms-tag {
+  background: #ffffff;
+  color: #0b4a9f;
+  box-shadow: inset 0 0 0 1px rgba(46, 125, 246, .55);
+}

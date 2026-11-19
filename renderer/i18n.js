@@ -86,52 +86,71 @@
    * 这些不走 data-i18n，改为按「中文原文 → 英文」映射整体替换文本节点。
    * 只匹配字典里存在的界面文案，用户数据（模组名、路径）原样保留。
    */
+  // 有汉字才可能命中 SRC_EN/SRC_PAT；纯英文、数字、路径直接跳过。
+  var HAN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+  // 译文缓存：同一串（列表标签、筛选项、重复卡片）只算一次。
+  var TCACHE = Object.create(null);
+  var TCACHE_N = 0;
+  var TCACHE_MAX = 8000;
+
   function trText(s) {
     if (CUR !== 'en' || !s) return s;
     var t = s.trim();
     if (!t) return s;
 
-    var exact = window.SRC_EN && window.SRC_EN[t];
-    if (exact != null) return s.replace(t, exact);
+    var cached = TCACHE[s];
+    if (cached !== undefined) return cached;
 
-    var pats = window.SRC_PAT || [];
-    for (var i = 0; i < pats.length; i++) {
-      var src = pats[i][0], dst = pats[i][1], rep = null;
-      if (src.test(t)) {
-        // 单参数拼接串（如「导入失败：{详情}」）：详情先递归翻译，再拼回
-        if (dst.indexOf('$2') < 0 && dst.indexOf('$1') >= 0) {
-          var m1 = src.exec(t);
-          if (m1 && m1[1] && m1[1].length < t.length) {
-            var tail1 = trText(m1[1]);
-            rep = t.replace(src, function () { return dst.replace('$1', function () { return tail1; }); });
+    var out = s;
+    var exact = window.SRC_EN && window.SRC_EN[t];
+    if (exact != null) out = s.replace(t, exact);
+    else if (!HAN.test(t)) out = s; // 纯 ASCII 用户数据，不进正则
+    else {
+      var pats = window.SRC_PAT || [];
+      for (var i = 0; i < pats.length; i++) {
+        var src = pats[i][0], dst = pats[i][1], rep = null;
+        if (src.test(t)) {
+          // 单参数拼接串（如「导入失败：{详情}」）：详情先递归翻译，再拼回
+          if (dst.indexOf('$2') < 0 && dst.indexOf('$1') >= 0) {
+            var m1 = src.exec(t);
+            if (m1 && m1[1] && m1[1].length < t.length) {
+              var tail1 = trText(m1[1]);
+              rep = t.replace(src, function () { return dst.replace('$1', function () { return tail1; }); });
+            }
+          }
+          if (rep == null) rep = t.replace(src, dst);
+          if (rep !== t) { out = s.replace(t, rep); break; }
+        }
+      }
+
+      if (out === s) {
+        var pres = window.SRC_PRE || [];
+        for (var j = 0; j < pres.length; j++) {
+          var mm = pres[j][0].exec(t);
+          if (mm && mm[1] && mm[1].length < t.length) {
+            var tail = trText(mm[1]);
+            var full = t.replace(pres[j][0], function () { return pres[j][1] + tail; });
+            if (full !== t) { out = s.replace(t, full); break; }
           }
         }
-        if (rep == null) rep = t.replace(src, dst);
-        if (rep !== t) return s.replace(t, rep);
       }
-    }
 
-    var pres = window.SRC_PRE || [];
-    for (var j = 0; j < pres.length; j++) {
-      var mm = pres[j][0].exec(t);
-      if (mm && mm[1] && mm[1].length < t.length) {
-        var tail = trText(mm[1]);
-        var full = t.replace(pres[j][0], function () { return pres[j][1] + tail; });
-        if (full !== t) return s.replace(t, full);
-      }
-    }
-
-    var subs = window.SRC_SUB;
-    if (subs) {
-      var out = s;
-      for (var k in subs) {
-        if (Object.prototype.hasOwnProperty.call(subs, k) && out.indexOf(k) >= 0) {
-          out = out.split(k).join(subs[k]);
+      if (out === s) {
+        var subs = window.SRC_SUB;
+        if (subs) {
+          for (var k in subs) {
+            if (Object.prototype.hasOwnProperty.call(subs, k) && out.indexOf(k) >= 0) {
+              out = out.split(k).join(subs[k]);
+            }
+          }
         }
       }
-      if (out !== s) return out;
     }
-    return s;
+
+    if (TCACHE_N >= TCACHE_MAX) { TCACHE = Object.create(null); TCACHE_N = 0; }
+    TCACHE[s] = out;
+    TCACHE_N++;
+    return out;
   }
 
   function trNode(node) {
@@ -142,15 +161,22 @@
       return;
     }
     if (node.nodeType !== 1) return;
-    var walker = document.createTreeWalker(node, 4, {
+    // 自绘区域（商店卡片等）由各自渲染逻辑负责翻译，Observer 不再整棵重扫
+    if (node.hasAttribute && node.hasAttribute('data-i18n-skip')) return;
+    var walker = document.createTreeWalker(node, 1 | 4, { // ELEMENT_NODE | TEXT_NODE
       acceptNode: function (n) {
-        var p = n.parentNode;
-        if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE')) return 2;
+        if (n.nodeType === 1) {
+          // 返回 2（FILTER_REJECT）会连同整棵子树一起跳过，比逐个文本节点 closest() 便宜得多。
+          if (n.nodeName === 'SCRIPT' || n.nodeName === 'STYLE') return 2;
+          if (n.hasAttribute && n.hasAttribute('data-i18n-skip')) return 2;
+          return 1;
+        }
         return 1;
       }
     });
     while (walker.nextNode()) {
       var n = walker.currentNode;
+      if (n.nodeType !== 3) continue;
       var nv = trText(n.nodeValue);
       if (nv !== n.nodeValue) n.nodeValue = nv;
     }
@@ -162,13 +188,16 @@
     if (window.__i18nObserver || !window.MutationObserver || !document.body) return;
     var queue = [];
     var scheduled = false;
+    var flushing = false;
     function flush() {
       scheduled = false;
       var items = queue; queue = [];
+      flushing = true;
       for (var i = 0; i < items.length; i++) trNode(items[i]);
+      flushing = false;
     }
     var mo = new MutationObserver(function (muts) {
-      if (CUR !== 'en') return;
+      if (CUR !== 'en' || flushing) return;
       for (var i = 0; i < muts.length; i++) {
         var m = muts[i];
         if (m.type === 'characterData') queue.push(m.target);
@@ -190,7 +219,10 @@
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
     document.documentElement.setAttribute('data-lang', lang);
     apply(document);
-    if (lang === 'en') trNode(document.body);
+    // 只翻当前可见页，避免每次切语言都重扫整棵 DOM（英文模式这一步原来要 200ms+）。
+    // 其余页由 renderer 的 setAppLang 重绘或在进入页面时补翻。
+    var active = document.querySelector('.view.active');
+    if (lang === 'en' && active) trNode(active);
     startObserver();
     if (changed) {
       for (var i = 0; i < LISTENERS.length; i++) {

@@ -321,14 +321,19 @@ function exportZip({ dataDir, entry, outPath }) {
   const zip = new AdmZip();
   const srcs = [];
   const root = dataDir;
+  const rootResolved = path.resolve(root);
+  const insideRoot = (p) => {
+    const abs = path.resolve(p);
+    return abs === rootResolved || abs.startsWith(rootResolved + path.sep);
+  };
   if (entry.target) {
     const t = path.isAbsolute(entry.target) ? entry.target : path.join(root, entry.target);
-    if (fs.existsSync(t) && fs.statSync(t).isDirectory()) srcs.push({ abs: t, rel: path.basename(t) });
+    if (insideRoot(t) && fs.existsSync(t) && fs.statSync(t).isDirectory()) srcs.push({ abs: t, rel: path.basename(t) });
   }
   if (!srcs.length && Array.isArray(entry.files)) {
     for (const rel of entry.files) {
       const abs = path.isAbsolute(rel) ? rel : path.join(root, rel);
-      if (fs.existsSync(abs)) srcs.push({ abs, rel: path.basename(abs) });
+      if (insideRoot(abs) && fs.existsSync(abs)) srcs.push({ abs, rel: path.basename(abs) });
     }
   }
   if (!srcs.length) throw new Error('找不到模组源文件');

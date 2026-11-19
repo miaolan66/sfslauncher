@@ -134,6 +134,8 @@ I18NRegister('en', {
 
   // ===== Downloads =====
   'dl.title': 'Download Queue',
+  'dl.expand': 'Expand ▾',
+  'dl.collapse': 'Collapse ▴',
   'dl.clearDone': 'Clear Completed',
   'dl.desc': 'Shows download tasks and progress. In-progress tasks can be cancelled; import finished files from the Mods page.',
   'dl.emptyTitle': 'No downloads',
@@ -184,6 +186,7 @@ I18NRegister('en', {
   'settings.onboarding': 'Guided tour',
   'settings.onboardingDesc': 'Walks through each page and its common actions. Plays automatically on first launch.',
   'settings.replayOnboarding': 'Replay tour',
+  'settings.showChecklist': 'Show task list',
   'settings.theme': 'Theme',
   'settings.themeDesc': 'Dark, light, or follow the system. Glass is configured separately.',
   'settings.themeDark': 'Dark',
@@ -284,13 +287,16 @@ I18NRegister('en', {
   'author.tip': 'Copy the QQ number and add them as a friend — send them the crash log.',
 
   // ===== Localization dialog =====
-  'han.title': 'Inject Chinese Localization',
+  'han.title': 'Chinese Localization',
   'han.dir': 'Game folder',
-  'han.body1': '<b>Game text:</b> writes the community Chinese word list into <code>Spaceflight Simulator_Data\\Custom Translations</code> and switches the game language to it. It adds one txt file — delete it to go back to English.',
-  'han.body2': '<b>DLL translation:</b> injects into the running game and renders mod text with a Chinese font. It does not touch the <code>Mods</code> folder and writes nothing to disk.',
-  'han.warn': 'Both switches live in the injector UI and are controlled there; the launcher does not manage them. Injection is process-level, so some antivirus tools block it — when blocked, the game stays in English.',
+  'han.state': 'Status',
+  'han.body1': '<b>Game text:</b> writes the community Chinese word list into <code>Spaceflight Simulator_Data\\Custom Translations</code> and switches the game language to it.',
+  'han.body2': '<b>Runtime translation:</b> installs <code>SFSHanRuntime</code> and a Chinese font into <code>Mods</code>; the mod loader takes over text rendering when the game starts.',
+  'han.warn': 'Close the game completely before installing or uninstalling. The runtime mod is an unsigned DLL, so some antivirus tools block it; when blocked, the game stays in English.',
   'han.src': 'Source',
-  'han.run': 'Open injector',
+  'han.install': 'Install',
+  'han.uninstall': 'Uninstall',
+  'han.run': 'Install',
 
   // ===== Import dialog =====
   'import.title': 'Import Mods',

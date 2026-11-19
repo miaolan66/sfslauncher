@@ -2,7 +2,7 @@
 
 A Windows launcher for Spaceflight Simulator. Instances, mods, blueprints, saves and appearance in one window.
 
-Current version **0.88.1**, Windows 10 / 11 (x64). The game is not bundled — you need your own copy.
+Current version **0.88.2**, Windows 10 / 11 (x64). The game is not bundled — you need your own copy.
 
 Website and downloads: https://miaolan66.github.io/sfslauncher/
 
@@ -69,11 +69,11 @@ Get the latest build from [Releases](../../releases). Two packages:
 | `SFSLauncher-<version>-x64-setup.exe` | Installer, installs per user, lets you pick the target folder, creates desktop and Start menu shortcuts |
 | `SFSLauncher-<version>-x64-portable.exe` | Portable, no installation, runs wherever you put it |
 
-Both packages are feature-identical and include the translation injector.
+Both packages are feature-identical and install the Chinese pack inside the launcher.
 
 ## Running from source
 
-The source archive is at the repository root: `SFSLauncher-0.88.1-source.zip`.
+The source archive is at the repository root: `SFSLauncher-0.88.2-source.zip`.
 
 Requires Node.js 18 or newer and npm.
 
@@ -109,7 +109,8 @@ renderer/          UI: pages, styles, Liuli theme, onboarding
   liuli-theme.js   Liuli material controller
   app-theme.js     Theme and material switching
   mcu.js           M3 role color computation
-assets/bin/        Translation injector
+assets/bin/        Translation injector (kept, no longer the default path)
+assets/han/        Runtime, font and word list (installed by the launcher)
 build/             Installer icons and bitmap assets
 scripts/           Packaging hooks
 ```
@@ -117,11 +118,13 @@ scripts/           Packaging hooks
 ## Acknowledgements
 
 - **a future star**: technical support
-- **Arctic.**: technical support; developed the `SFSChineseInjector` translation injector used here (integrated with the author's permission)
+- **Arctic.**: technical support; the translation runtime and word list come from `SFSChineseInjector`, used under that repository's license
 - **qqnt-liuli-theme**: the color and veil implementation of the Liuli material is based on this project
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+GPL-3.0-or-later (GPL-3.0 or any later version); see [LICENSE](LICENSE) for the full text. Any distribution of this software or a modified version must include the complete corresponding source under the same license.
+
+`assets/bin/SFSChineseInjector.exe` and the runtime, font and word list under `assets/han/` come from [Arctic-Ice67/SFSChineseInjector](https://github.com/Arctic-Ice67/SFSChineseInjector). That repository's `LICENSE` is the **PolyForm Strict License 1.0.0** (noncommercial use only; redistribution, modification and derivative works are not permitted by default), not MIT. This repository's GPL-3.0-or-later does not cover or relicense those files. Before shipping them in an installer, obtain the author's written permission covering distribution, modification and derivative works; if such permission already exists, that permission governs. Without it, use these files locally only and do not publish `assets/han/` or `assets/bin/` with a release.
 
 This is an unofficial tool, not affiliated with the developers of Spaceflight Simulator. Saves, mods and blueprints used with this tool are at your own risk — back up anything important.

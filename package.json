@@ -1,11 +1,11 @@
 {
   "name": "sfs-launcher",
   "productName": "SFS 启动器",
-  "version": "0.88.1",
+  "version": "0.88.2",
   "description": "SFS 启动器",
   "main": "main.js",
   "author": "ml / a future star",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "start": "electron .",
     "smoke": "electron . --smoke",
@@ -43,6 +43,10 @@
       {
         "from": "assets/bin",
         "to": "bin"
+      },
+      {
+        "from": "assets/han",
+        "to": "han"
       }
     ],
     "files": [

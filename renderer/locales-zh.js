@@ -134,6 +134,8 @@ I18NRegister('zh', {
 
   // ===== 下载队列 =====
   'dl.title': '下载队列',
+  'dl.expand': '展开 ▾',
+  'dl.collapse': '收起 ▴',
   'dl.clearDone': '清除已完成',
   'dl.desc': '显示下载任务及进度，可取消进行中的任务；完成后请到「模组」页导入。',
   'dl.emptyTitle': '暂无下载任务',
@@ -184,6 +186,7 @@ I18NRegister('zh', {
   'settings.onboarding': '新手引导',
   'settings.onboardingDesc': '分步介绍各页面用途和常用操作，首次启动会自动播放',
   'settings.replayOnboarding': '重看引导',
+  'settings.showChecklist': '查看任务清单',
   'settings.theme': '外观主题',
   'settings.themeDesc': '深色、浅色或跟随系统；毛玻璃效果可单独设置',
   'settings.themeDark': '深色',
@@ -284,13 +287,16 @@ I18NRegister('zh', {
   'author.tip': '可以复制 QQ 号添加好友，把崩溃日志发给他们喵～',
 
   // ===== 汉化弹窗 =====
-  'han.title': '注入汉化',
+  'han.title': '汉化',
   'han.dir': '游戏目录',
-  'han.body1': '<b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\\Custom Translations</code>，并把语言切到该词表。只多一个 txt，删掉即恢复英文。',
-  'han.body2': '<b>DLL 汉化</b>：游戏运行时注入进程，把模组里的中英文统一成中文字体。不改 <code>Mods</code> 目录，不落盘。',
-  'han.warn': '两个开关都在注入器界面里，由它自己控制，启动器不代管。注入属于进程注入，部分杀软会拦截；被拦截时游戏仍是英文。',
-  'han.src': '开源地址',
-  'han.run': '打开注入器',
+  'han.state': '当前状态',
+  'han.body1': '<b>本体汉化</b>：把社区中文词表写进 <code>Spaceflight Simulator_Data\\Custom Translations</code>，并把游戏语言切到该词表。',
+  'han.body2': '<b>运行时汉化</b>：把 <code>SFSHanRuntime</code> 和中文字体装进 <code>Mods</code>，游戏启动时由 Mod 加载器接管文本。',
+  'han.warn': '安装或卸载前先完全退出游戏。运行时 Mod 是未签名 DLL，部分杀软会拦截；被拦截时游戏仍显示英文。',
+  'han.src': '来源',
+  'han.install': '安装汉化',
+  'han.uninstall': '卸载汉化',
+  'han.run': '安装汉化',
 
   // ===== 模组导入弹窗 =====
   'import.title': '模组导入',

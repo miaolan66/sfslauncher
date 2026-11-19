@@ -159,5 +159,8 @@ contextBridge.exposeInMainWorld('launcher', {
   openAppDir: () => ipcRenderer.invoke('app:openDir'),
   getLogDir: () => ipcRenderer.invoke('log:getDir'),
   hanInfo: () => ipcRenderer.invoke('han:info'),
-  hanOpen: (instId) => ipcRenderer.invoke('han:open', instId)
+  hanOpen: (instId) => ipcRenderer.invoke('han:open', instId),
+  hanStatus: (instId) => ipcRenderer.invoke('han:status', instId),
+  hanInstall: (instId) => ipcRenderer.invoke('han:install', instId),
+  hanUninstall: (instId) => ipcRenderer.invoke('han:uninstall', instId)
 });

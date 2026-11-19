@@ -4,7 +4,7 @@
 
 Spaceflight Simulator 的 Windows 启动器：实例、模组、蓝图、存档、外观收进一个窗口。
 
-当前版本 **0.88.1**，支持 Windows 10 / 11（x64）。游戏本体需要自行准备，这个工具不包含游戏文件。
+当前版本 **0.88.2**，支持 Windows 10 / 11（x64）。游戏本体需要自行准备，这个工具不包含游戏文件。
 
 官网与下载页：https://miaolan66.github.io/sfslauncher/
 
@@ -69,11 +69,11 @@ Spaceflight Simulator 的 Windows 启动器：实例、模组、蓝图、存档�
 | `SFSLauncher-<版本>-x64-setup.exe` | 安装版，按当前用户安装，可改安装目录，建桌面和开始菜单快捷方式 |
 | `SFSLauncher-<版本>-x64-portable.exe` | 便携版，免安装，放在哪就在哪运行 |
 
-安装版和便携版功能一致，都自带汉化注入器。
+安装版和便携版功能一致，都在启动器内直接安装汉化。
 
 ## 从源码运行
 
-源码压缩包在仓库根目录：`SFSLauncher-0.88.1-source.zip`。
+源码压缩包在仓库根目录：`SFSLauncher-0.88.2-source.zip`。
 
 需要 Node.js 18 以上、npm。
 
@@ -109,7 +109,8 @@ renderer/          界面：页面、样式、琉璃主题、引导
   liuli-theme.js   琉璃材质控制器
   app-theme.js     主题与材质切换
   mcu.js           M3 角色色计算
-assets/bin/        汉化注入器
+assets/bin/        汉化注入器（保留，不再作为默认入口）
+assets/han/        汉化运行时、字体与词表（启动器直接安装）
 build/             安装包图标与位图资源
 scripts/           打包钩子
 ```
@@ -117,11 +118,13 @@ scripts/           打包钩子
 ## 致谢
 
 - **a future star**：技术支持
-- **Arctic.**：技术支持；汉化注入器 `SFSChineseInjector` 由其开发（已获作者授权集成）
+- **Arctic.**：技术支持；汉化运行时与词表来自其项目 `SFSChineseInjector`，按该仓库许可证使用
 - **qqnt-liuli-theme**：琉璃材质的取色与遮罩实现参考了该项目
 
 ## 许可
 
-MIT，见 [LICENSE](LICENSE)。
+GPL-3.0-or-later（GPL-3.0 或更高版本），全文见 [LICENSE](LICENSE)。分发本软件或修改版时，须同时以同一协议提供完整源码。
+
+`assets/bin/SFSChineseInjector.exe` 和 `assets/han/` 内的运行时、字体、词表来自 [Arctic-Ice67/SFSChineseInjector](https://github.com/Arctic-Ice67/SFSChineseInjector)，该仓库的 `LICENSE` 是 **PolyForm Strict License 1.0.0**（仅限非商业用途，默认不允许再分发、修改或制作衍生作品），不是 MIT。本仓库的 GPL-3.0-or-later 不覆盖这些文件，也不改变它们的授权。随安装包分发前，需取得作者针对「分发 + 修改 + 衍生」的书面授权；如果作者已另有书面授权，以该授权为准。未取得授权时，请只在本机自用，不要把 `assets/han/` 和 `assets/bin/` 随包发布。
 
 这是非官方工具，与 Spaceflight Simulator 的开发方没有关系。使用本工具产生的存档、模组和蓝图风险由使用者自行承担，重要存档建议先备份。
